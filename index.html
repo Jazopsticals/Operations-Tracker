@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NPSA Run Tracker (demo)</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --damson: #12324A; --damson-800: #2C5170; --damson-600: #5E7D96; --damson-400: #9DB2C2;
+  --damson-200: #CFDCE5; --damson-100: #E6EEF3; --damson-50: #F3F7FA;
+  --near-black: #1a1a1a; --linen: #F4F6F7; --sand: #EAF1F6; --soft-white: #FFFFFF;
+  --stormy-teal: #1F6FB2; --system-red: #C40B0E; --system-green: #4DB748; --system-yellow: #F2A72A;
+  --border-default: #E2E8ED; --border-strong: #C3CED7; --border-muted: #EEF2F5;
+  --field: #FFFFFF; --on-accent: #FFFFFF;
+  --ok-bg: #DBF1DA; --ok-fg: #2d6b29; --bad-bg: #F3CECF; --bad-fg: #C40B0E; --bad-text: #7a0709;
+  --warn-bg: #FCEDD4; --warn-fg: #8a5d0c; --warn-text: #6b4a0b; --shadow: rgba(18,50,74,.08);
+  color-scheme: light;
+  box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --sans: 'Manrope', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --damson: #CFE3F2; --damson-800: #B5CDE0; --damson-600: #8FAAC0; --damson-400: #64809A; --damson-200: #34495C; --damson-100: #2A3B4B; --damson-50: #213040;
+    --near-black: #E9EEF2; --linen: #0F1820; --sand: #1E2C38; --soft-white: #17222C; --stormy-teal: #6AAEE6; --system-red: #FF8A8C;
+    --border-default: #2C3B48; --border-strong: #4A5D6E; --border-muted: #22303C;
+    --field: #1D2A35; --on-accent: #0F1820;
+    --ok-bg: #1F3A24; --ok-fg: #9FDC9B; --bad-bg: #4A1A1E; --bad-fg: #FF9C9E; --bad-text: #FFC2C3;
+    --warn-bg: #43341A; --warn-fg: #F2C97A; --warn-text: #F5D9A2; --shadow: rgba(0,0,0,.35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --damson: #CFE3F2; --damson-800: #B5CDE0; --damson-600: #8FAAC0; --damson-400: #64809A; --damson-200: #34495C; --damson-100: #2A3B4B; --damson-50: #213040;
+  --near-black: #E9EEF2; --linen: #0F1820; --sand: #1E2C38; --soft-white: #17222C; --stormy-teal: #6AAEE6; --system-red: #FF8A8C;
+  --border-default: #2C3B48; --border-strong: #4A5D6E; --border-muted: #22303C;
+  --field: #1D2A35; --on-accent: #0F1820;
+  --ok-bg: #1F3A24; --ok-fg: #9FDC9B; --bad-bg: #4A1A1E; --bad-fg: #FF9C9E; --bad-text: #FFC2C3;
+  --warn-bg: #43341A; --warn-fg: #F2C97A; --warn-text: #F5D9A2; --shadow: rgba(0,0,0,.35);
+  color-scheme: dark;
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body.readonly [data-action="new"], body.readonly [data-action="edit"], body.readonly [data-action="delete"],
+body.readonly .add-row, body.readonly [data-action="mark-sent"], body.readonly [data-action="tpl-new"],
+body.readonly [data-action="tpl-up"], body.readonly [data-action="tpl-down"],
+body.readonly [data-action="tpl-edit"], body.readonly [data-action="tpl-delete"], body.readonly [data-action="restore"],
+body.readonly [data-action="note"], body.readonly [data-action="remove-task"],
+body.readonly [data-action="font-up"], body.readonly [data-action="font-down"], body.readonly [data-action="make-draft"] { display: none !important; }
+.sync { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--damson-800); }
+.sync::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--stormy-teal); }
+.who { font-weight: 500; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--linen); color: var(--near-black); font: 15px/1.5 var(--sans); min-height: 100%; }
+h1 { font-family: var(--serif); font-weight: 400; color: var(--damson); font-size: 30px; line-height: 1.25; margin: 0; }
+h2, h3 { font-family: var(--sans); color: var(--damson); font-weight: 600; margin: 0; }
+h2 { font-size: 19px; }
+a { color: var(--damson); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--damson); outline-offset: 2px; }
+
+.wrap { max-width: 1160px; margin: 0 auto; padding: 32px 32px 64px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { border-radius: 8px; padding: 9px 16px; font-weight: 500; cursor: pointer; border: 1px solid var(--damson); background: transparent; color: var(--damson); transition: background .15s; }
+.btn:hover { background: var(--damson-50); }
+.btn-primary { background: var(--damson); color: var(--soft-white); }
+.btn-primary:hover { background: var(--damson-800); }
+.btn-quiet { border-color: transparent; padding: 6px 10px; }
+.btn-danger { border-color: var(--system-red); color: var(--system-red); }
+.btn-danger:hover { background: var(--bad-bg); }
+.card { background: var(--soft-white); border-radius: 12px; box-shadow: 0 1px 3px var(--shadow); padding: 24px; }
+.muted { color: var(--damson-600); }
+.small { font-size: 13px; }
+.banner { background: var(--warn-bg); color: var(--warn-text); border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; font-size: 14px; }
+
+/* Home */
+.home-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+.home-head p { margin: 8px 0 0; max-width: 60ch; }
+.runs { display: grid; gap: 12px; }
+.run-row { width: 100%; text-align: left; border: 0; cursor: pointer; font: inherit; color: inherit; display: grid; grid-template-columns: minmax(0,2fr) minmax(0,1.3fr) minmax(0,1.6fr) 150px; gap: 20px; align-items: center; padding: 18px 24px; color: inherit; }
+.run-row:hover { text-decoration: none; box-shadow: 0 2px 10px var(--shadow); }
+.run-row .name { font-weight: 600; color: var(--damson); font-size: 16px; }
+.bar { height: 6px; background: var(--damson-100); border-radius: 99px; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--stormy-teal); border-radius: 99px; }
+.empty { text-align: center; padding: 56px 24px; }
+.empty p { max-width: 46ch; margin: 8px auto 20px; }
+.section-label { font-weight: 600; color: var(--damson-800); margin: 32px 0 12px; font-size: 14px; }
+
+.back { background: none; border: 0; padding: 4px 0; color: var(--damson); cursor: pointer; font-weight: 500; }
+.back:hover { text-decoration: underline; }
+.confirm-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--bad-bg); color: var(--bad-text); border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; }
+#toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--damson); color: var(--soft-white); padding: 10px 18px; border-radius: 8px; font-size: 14px; box-shadow: 0 4px 16px var(--shadow); z-index: 10; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); max-width: calc(100% - 32px); }
+.field textarea { min-height: 70px; resize: vertical; }
+.overlay { position: fixed; inset: 0; background: rgba(53,9,68,.35); display: flex; align-items: flex-start; justify-content: center; padding: 32px 16px; overflow-y: auto; z-index: 20; }
+.sheet { background: var(--soft-white); border-radius: 12px; width: 100%; max-width: 820px; box-shadow: 0 12px 40px rgba(53,9,68,.25); padding: 24px; }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+.subject-row { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 12px; align-items: center; background: var(--sand); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
+.subject-row .k { font-size: 12px; color: var(--damson-800); font-weight: 600; }
+.subject-row .v { font-weight: 500; }
+.email-body { background: #fff; color: #000; border: 1px solid var(--border-default); border-radius: 8px; padding: 20px 24px; max-height: 60vh; overflow-y: auto; }
+.email-body mark, .tpl-preview mark { background: #FCEDD4; color: #8a5d0c; border-radius: 3px; padding: 0 3px; }
+.missing-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--warn-bg); color: var(--warn-text); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; }
+.sheet-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
+.email-block { padding: 20px 0; border-bottom: 1px solid var(--border-muted); scroll-margin-top: 16px; }
+.email-block:last-of-type { border-bottom: 0; }
+.email-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.email-title h3 { font-size: 16px; }
+.email-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.size-btn { padding: 3px 10px; min-width: 36px; font-weight: 600; border-color: var(--border-strong); }
+.size-val { min-width: 38px; text-align: center; font-weight: 600; font-size: 13px; color: var(--damson); }
+.email-block .email-body { max-height: none; }
+.email-block.flash { animation: flash 1.2s ease-out; }
+@keyframes flash { from { background: var(--damson-50); } to { background: transparent; } }
+@media print { .email-block .sheet-actions, .email-block .missing-bar, .email-block .btn { display: none !important; } }
+.email-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.email-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border-muted); }
+.email-list li:last-child { border-bottom: 0; }
+.linkish.email { color: var(--damson); font-weight: 600; }
+.tpl-editor { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 24px; align-items: start; }
+.rte-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px; border: 1px solid var(--border-default); border-bottom: 0; border-radius: 8px 8px 0 0; background: var(--damson-50); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; }
+.rte-btn { border: 1px solid transparent; background: transparent; color: var(--damson); border-radius: 6px; padding: 5px 10px; font-size: 14px; cursor: pointer; min-width: 34px; }
+.rte-btn:hover { background: var(--damson-100); border-color: var(--damson-200); }
+.rte-sep { width: 1px; height: 22px; background: var(--border-strong); margin: 0 4px; }
+.rte-size { min-width: 40px; text-align: center; font-size: 13px; font-weight: 600; color: var(--damson); }
+.rte-link { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1px solid var(--border-default); border-bottom: 0; background: var(--damson-50); }
+.rte-link[hidden] { display: none; }
+.rte-link input { flex: 1 1 200px; border: 1px solid var(--border-default); border-radius: 6px; padding: 7px 10px; background: var(--field); }
+.rte-link select { width: auto; flex: 0 1 220px; }
+.rte { min-height: 420px; max-height: 70vh; overflow-y: auto; border: 1px solid var(--border-default); border-radius: 0 0 8px 8px; padding: 14px 16px; background: #fff; color: #000; font-family: Aptos, Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.4; }
+.rte:focus { outline: none; border-color: var(--damson); }
+.rte a { color: #0563C1; }
+.rte ul, .rte ol { margin: 0; padding-left: 24px; }
+.ph-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ph-chip { border: 1px solid var(--damson-200); background: var(--damson-50); color: var(--damson); border-radius: 99px; padding: 3px 10px; font-size: 12px; cursor: pointer; }
+.ph-chip:hover { background: var(--damson-100); }
+.move-btn { font-size: 16px; padding: 6px 10px; border: 1px solid var(--border-default); }
+.move-btn:disabled { opacity: .35; cursor: default; }
+.auto-tag { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .02em; background: var(--stormy-teal); color: var(--on-accent); border-radius: 99px; padding: 0 6px; margin-left: 2px; vertical-align: 1px; }
+.tpl-preview { position: sticky; top: 16px; }
+select { width: 100%; border: 1px solid var(--border-default); border-radius: 8px; padding: 9px 12px; background: var(--field); color: var(--near-black); }
+@media (max-width: 860px) { .tpl-editor { grid-template-columns: 1fr; } .tpl-preview { position: static; } .subject-row { grid-template-columns: 1fr; } }
+.layout.single { grid-template-columns: minmax(0,1fr); }
+.timeline { margin-bottom: 20px; }
+.day-group { padding-top: 18px; }
+.day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border-muted); }
+.day-head h2 { font-size: 15px; }
+.day-head .when { font-size: 13px; color: var(--damson-800); }
+.day-group.is-overdue .day-head h2, .day-group.is-overdue .day-head .when { color: var(--bad-fg); }
+.day-group.is-overdue { background: var(--bad-bg); margin: 14px -24px 0; padding: 14px 24px 4px; }
+.day-group.is-today .day-head h2::after { content: "Today"; margin-left: 8px; font-size: 11px; background: var(--damson); color: var(--soft-white); border-radius: 99px; padding: 2px 8px; vertical-align: 2px; }
+.day-group.is-past .day-head h2 { color: var(--damson-600); }
+.theme-tag { font-size: 12px; color: var(--damson-600); margin-top: 2px; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--damson-800); cursor: pointer; }
+.toggle input { width: 16px; height: 16px; accent-color: var(--damson); }
+.add-row input[type=date] { flex: 0 0 auto; width: auto; }
+@media print { .day-group.is-overdue { background: none; margin: 0; padding: 14px 0 4px; } }
+.tabs { display: flex; gap: 4px; margin: 24px 0 0; border-bottom: 1px solid var(--border-default); }
+.tab { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 16px; font-size: 15px; font-weight: 500; color: var(--damson-600); cursor: pointer; margin-bottom: -1px; }
+.tab:hover { color: var(--damson); }
+.tab.active { color: var(--damson); border-bottom-color: var(--damson); }
+.tabs + .layout { margin-top: 20px; }
+.pax { margin-top: 20px; }
+.pax-tools { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.pax-summary { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 16px 0 10px; }
+.pax-summary .chip { font-size: 13px; padding: 4px 12px; }
+.table-wrap { overflow-x: auto; }
+.pax-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.pax-table th { text-align: left; font-weight: 600; color: var(--damson-800); font-size: 13px; padding: 10px 12px; border-bottom: 1px solid var(--border-strong); white-space: nowrap; }
+.pax-table td { padding: 12px; border-bottom: 1px solid var(--border-muted); vertical-align: top; }
+.pax-table tr.cancelled td { opacity: .55; }
+.p-name { font-weight: 600; }
+@media print { .tabs { display: none; } }
+.draft-ok { margin: 12px 0 0; padding: 10px 14px; border-radius: 8px; background: var(--ok-bg); color: var(--ok-fg); font-size: 14px; }
+.draft-ok a { color: inherit; font-weight: 600; text-decoration: underline; }
+/* Run header */
+.run-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 24px; align-items: start; }
+.countdown { text-align: right; }
+.countdown .num { font-family: var(--serif); font-size: 44px; line-height: 1; color: var(--damson); }
+.countdown .lbl { font-size: 13px; color: var(--damson-800); margin-top: 6px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px 24px; margin: 20px 0 0; }
+.facts dt { font-size: 12px; color: var(--damson-600); }
+.facts dd { margin: 2px 0 0; font-weight: 500; }
+.overall { display: flex; align-items: center; gap: 14px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border-muted); font-size: 14px; }
+.overall .bar { flex: 1; height: 8px; }
+
+/* Layout */
+.layout { display: grid; grid-template-columns: 250px minmax(0,1fr); gap: 28px; margin-top: 28px; align-items: start; }
+.rail { position: sticky; top: 20px; }
+.rail ol { list-style: none; margin: 0; padding: 0; position: relative; }
+.rail ol::before { content: ""; position: absolute; left: 13px; top: 14px; bottom: 14px; width: 2px; background: var(--border-default); }
+.rail li { position: relative; }
+.rail button { display: grid; grid-template-columns: 28px 1fr; gap: 12px; width: 100%; text-align: left; background: none; border: 0; padding: 8px 8px 8px 0; cursor: pointer; border-radius: 8px; }
+.rail button:hover .r-name { text-decoration: underline; }
+.dot { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600; background: var(--linen); border: 2px solid var(--border-strong); color: var(--damson-600); position: relative; z-index: 1; }
+.is-done .dot { background: var(--stormy-teal); border-color: var(--stormy-teal); color: var(--on-accent); }
+.is-current .dot { background: var(--damson); border-color: var(--damson); color: var(--on-accent); box-shadow: 0 0 0 4px var(--damson-100); }
+.r-name { font-weight: 600; color: var(--damson); font-size: 14px; line-height: 1.3; }
+.is-done .r-name { color: var(--damson-800); }
+.r-meta { font-size: 12px; color: var(--damson-600); }
+.is-current .r-meta { color: var(--damson); font-weight: 500; }
+
+/* Stages */
+.stage { margin-bottom: 20px; scroll-margin-top: 16px; }
+.stage-head { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 1px solid var(--border-muted); }
+.stage-head .when { font-size: 13px; color: var(--damson-800); }
+.stage.is-current { box-shadow: 0 0 0 2px var(--damson), 0 1px 3px var(--shadow); }
+.tag-current { display: inline-block; background: var(--damson); color: var(--soft-white); font-size: 12px; font-weight: 600; border-radius: 99px; padding: 2px 10px; margin-left: 10px; vertical-align: 2px; }
+.stage-note { background: var(--sand); border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-top: 14px; }
+.tasks { list-style: none; margin: 0; padding: 0; }
+.task { display: grid; grid-template-columns: 26px minmax(0,1fr) auto; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border-muted); align-items: start; }
+.task:last-child { border-bottom: 0; }
+.task input[type=checkbox] { appearance: none; -webkit-appearance: none; width: 22px; height: 22px; margin: 1px 0 0; border: 2px solid var(--border-strong); border-radius: 6px; background: var(--soft-white); cursor: pointer; display: grid; place-items: center; }
+.task input[type=checkbox]:hover { border-color: var(--damson); }
+.task input[type=checkbox]:checked { background: var(--stormy-teal); border-color: var(--stormy-teal); }
+.task input[type=checkbox]:checked::after { content: ""; width: 6px; height: 11px; border: solid var(--on-accent); border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px,-1px); }
+.task label { cursor: pointer; font-weight: 500; }
+.task.done label { color: var(--damson-600); text-decoration: line-through; text-decoration-color: var(--damson-400); }
+.hint { font-size: 13px; color: var(--damson-800); margin-top: 2px; }
+.task-tools { display: flex; gap: 4px; margin-top: 4px; }
+.linkish { background: none; border: 0; padding: 0; color: var(--damson-600); font-size: 12px; cursor: pointer; }
+.linkish:hover { color: var(--damson); text-decoration: underline; }
+.note-input { width: 100%; margin-top: 8px; border: 1px solid var(--border-default); border-radius: 6px; padding: 7px 10px; font-size: 13px; background: var(--field); }
+.note-input:focus { border-color: var(--damson); outline: none; }
+.chip { white-space: nowrap; font-size: 12px; font-weight: 600; border-radius: 99px; padding: 3px 10px; background: var(--damson-100); color: var(--damson); }
+.chip-done { background: var(--ok-bg); color: var(--ok-fg); }
+.chip-overdue { background: var(--bad-bg); color: var(--bad-fg); }
+.chip-soon { background: var(--warn-bg); color: var(--warn-fg); }
+.chip-missing { background: transparent; color: var(--damson-600); font-weight: 500; padding: 3px 0; white-space: normal; text-align: right; max-width: 170px; }
+.add-row { display: flex; gap: 8px; margin-top: 14px; }
+.add-row input { flex: 1; border: 1px dashed var(--border-strong); border-radius: 8px; padding: 8px 12px; background: transparent; font-size: 14px; }
+.add-row input:focus { border-style: solid; border-color: var(--damson); outline: none; background: var(--field); }
+.notes-area { width: 100%; min-height: 110px; border: 1px solid var(--border-default); border-radius: 8px; padding: 12px; background: var(--field); resize: vertical; margin-top: 12px; }
+
+/* Form */
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px 20px; margin-top: 20px; }
+.field label { display: block; font-size: 13px; font-weight: 600; color: var(--damson); margin-bottom: 6px; }
+.field .help { font-size: 12px; color: var(--damson-600); margin-top: 4px; }
+.field input, .field textarea { width: 100%; border: 1px solid var(--border-default); border-radius: 8px; padding: 9px 12px; background: var(--field); }
+.field input:focus, .field textarea:focus { border-color: var(--damson); outline: none; }
+.field.full { grid-column: 1 / -1; }
+.fieldset-title { grid-column: 1 / -1; font-weight: 600; color: var(--damson-800); font-size: 14px; padding-top: 8px; border-top: 1px solid var(--border-muted); margin-top: 4px; }
+.form-actions { display: flex; gap: 10px; margin-top: 24px; }
+
+@media (max-width: 860px) {
+  .wrap { padding: 20px 16px 48px; }
+  .rail button { padding: 8px 12px 8px 0; }
+  .layout { grid-template-columns: 1fr; }
+  .rail { position: static; overflow-x: auto; }
+  .rail ol { display: flex; gap: 6px; }
+  .rail ol::before { display: none; }
+  .rail button { grid-template-columns: 28px auto; white-space: nowrap; padding-right: 14px; }
+  .run-row { grid-template-columns: 1fr; gap: 8px; }
+  .run-head { grid-template-columns: 1fr; }
+  .countdown { text-align: left; }
+  .form-grid { grid-template-columns: 1fr; }
+  h1 { font-size: 25px; }
+}
+@media print {
+  body { background: #fff; font-size: 12px; }
+  .no-print, .rail, .add-row, .task-tools, .banner { display: none !important; }
+  .layout { grid-template-columns: 1fr; margin-top: 12px; }
+  .card { box-shadow: none; border: 1px solid var(--border-default); padding: 14px 18px; break-inside: avoid; }
+  .stage.is-current { box-shadow: none; border: 2px solid var(--damson); }
+  .wrap { padding: 0; max-width: none; }
+  .note-input { border: 0; padding: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div id="app" class="wrap"></div>
+<input type="file" id="restore-input" accept=".json,application/json" hidden>
+
+<!-- Runs embedded here when a single run is saved as its own file. Leave empty in the master copy. -->
+<script id="seed" type="application/json">{"runs": [{"createdAt": "2026-10-13T06:39:35.344Z", "custom": {}, "declarationFormLink": "https://forms.example.com/r/demo-declaration", "dietaryFormLink": "https://forms.example.com/r/demo-dietary", "endDate": "2026-11-19", "id": "run-demo0001", "instructor": "Mei Ling Tan", "meetingRoom": "Level 3 Jade Room", "name": "CONFIRMED NPSA CMP IN-PERSON | November 17 - 19, 2026", "notes": "", "participants": "16", "pax": {"at": "2026-10-27T09:52:31.753Z", "by": "u_demo_coordinator_1", "people": [{"email": "marcus_lee@riskoffice.example", "id": "a01DEMO00000001001AA", "modified": "2026-10-16", "name": "Wei Jie (Marcus) Lee", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "daniel_koh@familyservices.example", "id": "a01DEMO00000001002AA", "modified": "2026-10-16", "name": "Daniel Koh", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "rachel_tay@familyservices.example", "id": "a01DEMO00000001003AA", "modified": "2026-10-16", "name": "Rachel Tay", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "chua_hui_min@familyservices.example", "id": "a01DEMO00000001004AA", "modified": "2026-10-16", "name": "Hui Min Chua", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "ong_boon_keat@civicsafety.example", "id": "a01DEMO00000001005AA", "modified": "2026-10-16", "name": "Boon Keat Ong", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "ryan_sim@legalcounsel.example", "id": "a01DEMO00000001006AA", "modified": "2026-10-16", "name": "Jun Hao (Ryan) Sim", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "benjamin_arthur_seah@legalcounsel.example", "id": "a01DEMO00000001007AA", "modified": "2026-10-16", "name": "Benjamin Arthur Seah", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "chloe_wee@legalcounsel.example", "id": "a01DEMO00000001008AA", "modified": "2026-10-16", "name": "Chloe Wee", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "grace_lau@transitboard.example", "id": "a01DEMO00000001009AA", "modified": "2026-10-16", "name": "Grace Lau", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "ivy_quek@transitboard.example", "id": "a01DEMO00000001010AA", "modified": "2026-10-16", "name": "Ivy Quek", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "nathan_yeo@transitboard.example", "id": "a01DEMO00000001011AA", "modified": "2026-10-16", "name": "Nathan Yeo", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "toh_mei_fen@transitboard.example", "id": "a01DEMO00000001012AA", "modified": "2026-10-16", "name": "Mei Fen Toh", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "farah_hamid@waterworks.example", "id": "a01DEMO00000001013AA", "modified": "2026-10-16", "name": "Farah Hamid", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "amy_foo@familyservices.example", "id": "a01DEMO00000001014AA", "modified": "2026-10-16", "name": "Amy Foo", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "joanne_pang@familyservices.example", "id": "a01DEMO00000001015AA", "modified": "2026-10-16", "name": "Joanne Pang", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}, {"email": "chan_kok_wah@transitboard.example", "id": "a01DEMO00000001016AA", "modified": "2026-10-16", "name": "Kok Wah Chan", "prework": "Not Started", "project": "", "received": false, "status": "Scheduled to Attend"}]}, "qaZoom": "joanne", "qaZoomMeetingId": "", "qaZoomPasscode": "", "qaZoomUrl": "", "runCode": "EC-009182", "sfEventId": "a00DEMO0000000001A", "sfEventName": "CONFIRMED NPSA CMP IN-PERSON | November 17 - 19, 2026", "startDate": "2026-11-17", "tasks": {"d1": {"done": false, "doneAt": null, "doneBy": null}, "e4": {"done": true, "doneAt": "2026-10-27", "doneBy": "u_demo_coordinator_1"}, "p1": {"done": true, "doneAt": "2026-10-15", "doneBy": "u_demo_coordinator_1"}, "p2": {"done": true, "doneAt": "2026-10-15", "doneBy": "u_demo_coordinator_2"}, "p3": {"done": true, "doneAt": "2026-10-27", "doneBy": "u_demo_coordinator_1"}, "w1": {"done": true, "doneAt": "2026-10-27", "doneBy": "u_demo_coordinator_1"}}, "updatedAt": "2026-10-27T10:23:19.058Z", "updatedBy": "u_demo_coordinator_1", "venue": "Harbourview Grand Hotel", "venueAddress": "12 Example Avenue  Singapore 000000"}], "openId": null, "templates": [{"body": "Hi all,\n\nAhead of the training program in 4 weeks’ time, we would need your help to complete the following:\n\n- [Dietary Requirements Survey Form]({{dietaryFormLink}}) – To let us know if you have/do not have any dietary restrictions for the hotel vendor to take note of for their catered food menu by **{{dietaryDeadline}}**. (Pls complete the form even if you do not have any dietary restrictions.)\n- [Individual End User Declaration Clause Acknowledgement Form]({{declarationFormLink}}) – To read through the Individual End User Declaration Clause on the Survey Form and submit this form to acknowledge it by **{{declarationDeadline}}**.\n\nPls fill up and complete the mandatory survey forms (links embedded above) by the respective deadlines indicated above.\n\nAlso, pls find the class details below for your reference:\n\n**Date:** {{classDates}}\n**Timing:** {{timing}} on all {{dayCount}} days\n\n**Training Venue:**\n{{venue}}\n{{venueAddress}}\n\n**Meeting Room:**\n{{meetingRoom}}\n\nThank you and we look forward to seeing you soon! 😊\n\nTraining & Delivery Team\nBrightpath\n[training@brightpath.example](mailto:training@brightpath.example)\n[www.brightpath.example](https://www.brightpath.example)", "builtIn": true, "id": "tpl-dietary-declaration", "name": "Dietary requirements and declaration form", "subject": "Brightpath Change Management Certification Program {{programmeDates}} - Dietary Requirements and Individual End User Declaration Clause Acknowledgement Form", "taskId": "e4", "updatedAt": "2026-10-15T08:05:29.639Z"}, {"body": "Hi everyone, please take a few seconds to answer this survey so that we can take note of any dietary requirements (if applicable). Please submit your responses by {{dietaryDeadline}} so that we have ample time to make the arrangements, thank you for your kind attention.\n\nWe would also like to share some details for the upcoming program you're registered for.\nDate:\n{{programmeDates}}\nTime:\n{{timing}}\nVenue:\n{{venue}}\n{{venueAddress}}\nMeeting Room:\n{{meetingRoom}}", "html": "\u003cdiv>Hi everyone, please take a few seconds to answer this survey so that we can take note of any dietary requirements (if applicable). Please submit your responses by {{dietaryDeadline}} so that we have ample time to make the arrangements, thank you for your kind attention.\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>\u003cu>We would also like to share some details for the upcoming program you're registered for.\u003c/u>\u003c/div>\u003cdiv>Date:\u003c/div>\u003cdiv>{{programmeDates}}\u003c/div>\u003cdiv>Time:\u003c/div>\u003cdiv>{{timing}}\u003c/div>\u003cdiv>Venue:\u003c/div>\u003cdiv>{{venue}}\u003c/div>\u003cdiv>{{venueAddress}}\u003c/div>\u003cdiv>Meeting Room:\u003c/div>\u003cdiv>{{meetingRoom}}\u003c/div>", "id": "tpl-form-description", "name": "Declaration form description", "subject": "", "taskId": "e1", "updatedAt": "2026-10-26T14:52:18.582Z"}, {"body": "", "html": "\u003cdiv>\u003cb>\u003cspan style=\"font-size: 20pt;\">Brightpath Change Management Certification Program – Northwind Public Service Academy on {{programmeDates}}\u003c/span>\u003c/b>\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>Dear all,\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>\u003cspan style=\"font-size: 11pt;\">Before the program commences, there are some important details and preparations we would like to share with you.\u003c/span>\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>\u003cb>\u003cu>\u003cspan style=\"font-size: 14pt;\">Pre-Program Requirements\u003c/span>\u003c/u>\u003c/b>\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>\u003cspan style=\"font-size: 11pt;\">To enhance your in-program learning experience, please complete the prework tasks provided through the Brightpath Portal by {{preworkDeadline}}.&nbsp;\u003c/span>\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>Prework Prior to the Program:\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>\u003cul>\u003cli>&nbsp;You will receive access details via email before the program start date. Allocate approximately two hours for completion, ensuring it's submitted before the program begins for instructor review.\u003c/li>\u003cli>For assistance in selecting a suitable project, consult \u003cb>Task 2A: Select a Project &amp; Project Selection – Frequently Asked Questions in the Brightpath Portal \u003c/b>under Task 2 of the Prework.\u003c/li>\u003c/ul>\u003c/div>\u003cdiv>\u003cul>\u003cli>Please complete the prework by {{preworkDeadline}} to help our instructors understand a little more about you, your role, and your project. We ask that where possible, you base your prework on a real-life project* that is currently underway or being planned in your organisation.\u003c/li>\u003c/ul>\u003cspan style=\"font-size: 11pt;\">\u003cbr>\u003c/span>\u003cspan style=\"font-size: 11pt;\">Additionally, please review The 5 Principles of Change and the Northstar Case Study, both can be found in the prework before the program.&nbsp;\u003c/span>\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>*For the uninitiated, a project is defined as an initiative launched to create unique output(s) (such as a product/service) to achieve specific objectives. \u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>A project has a clear start and end in time, defined scope and resources. Typically, a project is commissioned by a sponsor (e.g. a senior executive) to realize certain outcomes and benefits that contribute to the organization's strategy/mission/vision.\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>\u003cb>\u003cu>\u003cspan style=\"font-size: 14pt;\">Training Materials\u003c/span>\u003c/u>\u003c/b>\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>Your training materials including writing stationery will be provided on site.\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>\u003cb>\u003cu>\u003cspan style=\"font-size: 14pt;\">Program Details\u003c/span>\u003c/u>\u003c/b>\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>Training Venue: \u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>{{venue}}\u003c/div>\u003cdiv>{{venueAddress}}\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>Meeting Room:\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>{{meetingRoom}}\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv style=\"font-size: 14pt; font-weight: bold;\">Schedule Times:\u003c/div>\u003cdiv style=\"font-size: 11.5pt;\">Day 1 - 3\u003c/div>\u003cdiv style=\"font-size: 11.5pt;\">\u003cbr>\u003c/div>\u003cdiv>\u003cb>\u003cspan style=\"font-size: 12pt;\">{{timing}}\u003c/span>\u003c/b>\u003c/div>\u003cdiv style=\"font-size: 11.5pt;\">\u003cbr>\u003c/div>\u003cdiv style=\"font-size: 11.5pt;\">\u003cdiv>On Day 2 and Day 3, the instructors will be reviewing the knowledge checks 15 minutes before program commencement and to address any issues or remaining questions. The last hour of the program on Day 3 will remain for open discussion with the instructor(s) regarding the presentation delivered on the day and any remaining questions.\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>Your instructor will factor in breaks and lunch around the flow of training each day.\u003c/div>\u003c/div>\u003cdiv style=\"font-size: 11.5pt;\">\u003cb>\u003cbr>\u003c/b>\u003c/div>\u003cdiv>\u003cspan style=\"font-size: 12pt;\">\u003cb>IT requirements &amp; preparation:&nbsp;\u003c/b>\u003c/span>\u003c/div>\u003cdiv>\u003cspan style=\"font-size: 12pt;\">\u003cb>\u003cbr>\u003c/b>\u003c/span>\u003c/div>\u003cul>\u003cli>\u003cdiv>You’ll need a laptop with a strong internet connection and access to Brightpath’s Solution Suite. Please refrain from using tablets or highly secured company computers unless you can proficiently type/work and access everything you need for the program on these devices (e.g. public Wi-Fi and the Brightpath Portal).\u003c/div>\u003c/li>\u003cli style=\"font-size: 11.5pt;\">You will need access to Microsoft Office 2007 or newer. If you plan to use a Mac product, please use Microsoft Office for Mac to ensure tool compatibility.\u003c/li>\u003cli style=\"font-size: 11.5pt;\">Please ensure that your laptop has an HDMI/USB-C port for presentation purposes.\u003c/li>\u003c/ul>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>Lastly, we’d like to reiterate that Brightpath Learning has a duty of care to uphold Brightpath certification standards. Please take heed of the vital information below.\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>\u003cspan style=\"font-size: 12pt;\">\u003cu>\u003cb>Attendance and Certification\u003c/b>\u003c/u>\u003c/span>\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>\u003cspan style=\"font-size: 10pt;\">100% program attendance is required for certification. If you anticipate needing time away from the program, kindly inform us before it commences, and we will assist in rescheduling. Please note you could be subject to our Terms and Conditions.\u003c/span>\u003c/div>\u003cdiv>\u003cspan style=\"font-size: 10pt;\">\u003cbr>\u003c/span>\u003c/div>\u003cdiv>\u003cspan style=\"font-size: 10pt;\">This is a highly participative and intensive program and it will require the full commitment of your time and concentration. You will NOT be awarded the ‘Brightpath Certified Practitioner’ digital credentials if any training is missed. Please avoid scheduling any meetings/calls during the duration of the program.\u003c/span>\u003c/div>\u003cdiv>\u003cspan style=\"font-size: 10pt;\">\u003cbr>\u003c/span>\u003c/div>\u003cdiv>\u003cspan style=\"font-size: 10pt;\">All participants need to complete and return the prework document by the given deadline in order to be allowed on the Brightpath program.&nbsp;Successful program completion involves passing daily knowledge checks and delivering a presentation on your chosen project.\u003c/span>\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>\u003cbr>\u003c/div>\u003cdiv>\u003cdiv style=\"font-size: 11.5pt;\">Thank you for choosing Brightpath for your professional development journey. We look forward to a successful and enlightening certification program.\u003c/div>\u003cdiv style=\"font-size: 11.5pt;\">\u003cbr>\u003c/div>\u003cdiv style=\"font-size: 11.5pt;\">\u003cb>If you have any questions about preparing for your program, please do not hesitate to contact us at \u003c/b>\u003ca href=\"mailto:training@brightpath.example\">\u003cb>training@brightpath.example\u003c/b>\u003c/a>\u003cb>.\u003c/b>\u003c/div>\u003cdiv style=\"font-size: 11.5pt;\">\u003cb>Best Regards,\u003c/b>\u003c/div>\u003cdiv style=\"font-size: 11.5pt;\">\u003cb>Brightpath Training &amp; Delivery Team\u003c/b>\u003c/div>\u003c/div>\u003cdiv>\u003cbr>\u003c/div>", "id": "tpl-mv98lytg", "name": "Brightpath Change Management Certification Program Welcome Email", "subject": "Brightpath Change Management Certification Program – Northwind Public Service Academy on {{programmeDates}}", "taskId": "r4", "updatedAt": "2026-10-15T09:43:43.875Z"}, {"body": "", "html": "\u003cdiv style=\"font-size: 12pt;\">\u003cb>Brightpath Change Management Certification Program – Northwind Public Service Academy on {{startDate}} - {{endDate}}\u003c/b>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003cb>\u003cbr>\u003c/b>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">Dear all,\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003cbr>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">Hope you are well!\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003cbr>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">We understand the amount of preparation required for the upcoming change management program might be overwhelming, but we want to reassure you that the pre-work is meant to help you get ready for the program.\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003cbr>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">To support you further, we will be scheduling an \u003cb>optional\u003c/b>&nbsp;Zoom call on \u003cb>{{qaDate}}\u003c/b> from \u003cb>{{qaTime}} (SGT)\u003c/b> for people to ask questions regarding the preparations and/or about the program itself. Please join us using the Zoom link below.\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003cspan style=\"font-size: 12pt;\">*As this email does not serve as a calendar invite, please do block this Q&amp;A date and timing on your calendar.\u003c/span>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003cb>\u003cbr>\u003c/b>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003cb>Zoom Invitation &amp; Timings\u003c/b>\u003c/div>\u003cdiv style=\"font-size: 11.5pt;\">\u003cdiv style=\"font-size: 12pt;\">\u003cb>Topic: Brightpath Practitioner Certification Pre-program Q&amp;A\u003c/b>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003cbr>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003cb>{{qaZoomDetails}}\u003c/b>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003cb>\u003cbr>\u003c/b>\u003c/div>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">Note: We will close the session after 10 minutes if we do not see anyone joining.\u003c/div>\u003cdiv style=\"font-size: 12pt;\">Thank you and see you virtually soon!\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003cbr>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003cdiv style=\"font-size: 12pt;\">\u003cb>Training &amp; Delivery Team\u003c/b>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003cb>Brightpath\u003c/b>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003cbr>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003ca href=\"mailto:training@brightpath.example\">\u003cb>training@brightpath.example\u003c/b>\u003c/a>\u003c/div>\u003cdiv style=\"font-size: 12pt;\">\u003ca href=\"https://www.brightpath.example\">\u003cb>www.brightpath.example\u003c/b>\u003c/a>\u003c/div>\u003c/div>", "id": "tpl-mv9bvq4f", "name": "Q & A", "subject": "Q&A session (optional) | Change Management Certification", "taskId": "w3", "updatedAt": "2026-10-15T09:44:07.281Z"}], "zoom": {"links": [{"host": "Priya", "id": "priya", "meetingId": "900 1000 2000", "passcode": "", "url": "https://zoom.example/j/90010002000?pwd=demo"}, {"host": "Marcus", "id": "marcus", "meetingId": "907 2111 2913", "passcode": "112345", "url": "https://zoom.example/j/90721112913?pwd=demo"}, {"host": "Siti", "id": "siti", "meetingId": "914 3222 3826", "passcode": "124690", "url": "https://zoom.example/j/91432223826?pwd=demo"}, {"host": "Kevin", "id": "kevin", "meetingId": "921 4333 4739", "note": "Alex & Jordan can also host", "passcode": "137035", "url": "https://zoom.example/j/92143334739?pwd=demo"}, {"host": "Joanne", "id": "joanne", "meetingId": "928 5444 5652", "passcode": "149380", "url": "https://zoom.example/j/92854445652?pwd=demo"}, {"host": "Elaine", "id": "elaine", "meetingId": "935 6555 6565", "passcode": "161725", "url": "https://zoom.example/j/93565556565?pwd=demo"}, {"host": "Wendy Lim", "id": "wendy", "meetingId": "942 7666 7478", "passcode": "174070", "url": "https://zoom.example/j/94276667478?pwd=demo"}], "source": "Demo data"}, "settings": {"templateOrder": ["tpl-dietary-declaration", "tpl-mv98lytg", "tpl-mv9bvq4f", "tpl-prework-welcome", "tpl-form-description"]}}</script>
+
+<script>
+/* =====================================================================
+   NPSA CHECKLIST TEMPLATE
+   Based on "NPSA Program Operations Documentation".
+   To change the checklist for future runs, edit the STAGES list below.
+   - due(r) returns a date (YYYY-MM-DD) worked out from the run's details.
+   - needs names the run detail a due date depends on, so the page can
+     prompt for it when it is missing.
+   ===================================================================== */
+const STAGES = [
+  {
+    id: 'participants', name: 'Participant list & coordination', when: '3 weeks before',
+    tasks: r => [
+      { id: 'p1', text: 'Participant list email received', due: off(r.startDate, -21),
+        hint: 'Usually arrives 3 weeks before the program start date.' },
+      { id: 'p2', text: 'PUB Run Form email received from Syu', due: off(r.startDate, -21) },
+      { id: 'p3', text: 'Review participant details', due: off(r.startDate, -21), hint: '3 weeks before the program.' },
+      { id: 'p6', text: 'NPSA attendance and feedback slides/PDF received: save in the Teams folder and add the links in the Training Event for TSS',
+        hint: 'TSS uses these links during the program.' }
+    ]
+  },
+  {
+    id: 'prework', name: 'Pre-work', when: 'From participant confirmation',
+    note: 'Our team sends the pre-work reminders, not NPSA.',
+    tasks: r => [
+      { id: 'w1', text: 'Send Syu the pre-work deadline' + (r.startDate ? ' (' + fmt(preworkDeadline(r)) + ')' : '') + ', training venue details and instructor in charge',
+        hint: 'Syu adds the venue and instructor to the feedback survey. Pre-work is due 5 working days before the program.' +
+          (r.venue || r.instructor ? ' Venue: ' + ([r.venue, r.meetingRoom].filter(Boolean).join(', ') || 'not set') + '. Instructor: ' + (r.instructor || 'not set') + '.' : ''),
+        due: off(r.startDate, -21) },
+      { id: 'w2', text: 'Send the pre-work and welcome email', due: off(r.startDate, -21), hint: '3 weeks before the program.' },
+      { id: 'w4', text: 'Send the pre-work reminder', due: off(preworkDeadline(r), -3), needs: 'startDate',
+        hint: '2–3 days before the pre-work deadline.' }
+    ]
+  },
+  {
+    id: 'dietary', name: 'Dietary requirements & declaration form', when: '4 weeks before',
+    note: 'Key contacts: KangYe Ho and Nur Syuhadah.',
+    tasks: r => [
+      { id: 'e1', text: 'Update the program dates, venue and meeting room in the dietary form and email', due: off(r.startDate, -17), hint: '2 weeks and 3 days before the program.' },
+      { id: 'e4', text: 'Send the dietary requirements and declaration form email', due: off(r.startDate, -28),
+        hint: 'One email with both forms, 4 weeks before the program. Both forms are due ' + (fmt(dietaryDeadline(r)) || '2 weeks before the program') + '.' },
+      { id: 'e5', text: 'Send the dietary form reminder', due: off(dietaryDeadline(r), -2),
+        hint: 'Two days before the dietary form deadline (' + (fmt(dietaryDeadline(r)) || 'not set') + ').' },
+      { id: 'e6', text: 'Optional: if there are Muslim participants and the hotel can’t provide halal food, send them an additional email on dietary support',
+        hint: 'Only needed for some runs. If it doesn’t apply, tick it off and add a note such as “Not needed”.' }
+    ]
+  },
+  {
+    id: 'qa', name: 'Q&A session', when: '1 week before',
+    tasks: r => [
+      { id: 'q1', text: 'Send the Q&A session email', due: off(r.startDate, -7) },
+      { id: 'q2', text: 'Send the Q&A reminder email', due: off(qaDate(r), -1), needs: 'startDate',
+        hint: r.startDate ? 'The Q&A is on ' + fmt(qaDate(r)) + ', ' + QA_TIME + '.' : '1 day before the Q&A session.' }
+    ]
+  },
+  {
+    id: 'prep', name: 'Program preparation', when: 'Before day 1',
+    tasks: r => [
+      { id: 'r1', text: 'Prepare the attendance QR code', due: off(r.startDate, -2) },
+      { id: 'r2', text: 'Prepare the feedback form QR code', due: off(r.startDate, -2) },
+      { id: 'r3', text: 'Update the attendance slide deck from the latest run version', due: off(r.startDate, -2),
+        hint: 'Teams › Training Engagement › Enterprise › NPSA' },
+      { id: 'r4', text: 'Use the email templates from the latest NPSA run',
+        hint: 'Training Asia shared mailbox' }
+    ]
+  },
+  {
+    id: 'execution', name: 'Program execution', when: 'During the program',
+    note: 'If a participant can\u2019t scan the QR code, has technical issues or can\u2019t submit attendance, they should tell Syu.',
+    tasks: r => {
+      const list = [{ id: 'x1', text: 'Brief participants to contact Syu about attendance or QR issues', due: r.startDate || null }];
+      programmeDays(r).forEach((d, i, all) => list.push({
+        id: 'tss-' + d, text: 'Check in with TSS, day ' + (i + 1) + (all.length > 1 ? ' of ' + all.length : ''), due: d
+      }));
+      if (!r.startDate) list.push({ id: 'tss-1', text: 'Check in with TSS daily', needs: 'startDate' });
+      return list;
+    }
+  },
+  {
+    id: 'billing', name: 'Billing', when: 'After the program',
+    tasks: r => [
+      { id: 'b1', text: 'Confirm with Sales that we can go ahead with the order sync, and remind them to update DSP', due: off(r.endDate || r.startDate, 1) },
+      { id: 'b3', text: 'Order sync' },
+      { id: 'b4', text: 'Upload to Vendors@Gov',
+        due: (r.tasks && r.tasks.b3 && r.tasks.b3.done && r.tasks.b3.doneAt) ? off(r.tasks.b3.doneAt, 7) : null,
+        hint: (r.tasks && r.tasks.b3 && r.tasks.b3.done && r.tasks.b3.doneAt) ? '1 week after the order sync (done ' + fmt(r.tasks.b3.doneAt) + ').' : 'Due 1 week after the order sync. The date appears once the order sync is ticked.' }
+    ]
+  }
+];
+
+const FIELD_NAMES = { preworkDeadline: 'pre-work deadline', qaDate: 'Q&A date', startDate: 'program start date', hotelConfirmDate: 'hotel confirmation date' };
+
+/* ============================ Email templates ============================
+   Built-in templates. Edit them in the app under "Email templates", or here.
+   {{placeholder}} is filled from the run's details. Formatting:
+   **bold**, [link text](https://... or {{placeholder}}), lines starting
+   with "- " become bullets, a blank line starts a new paragraph.
+   ======================================================================== */
+const DEFAULT_TEMPLATES = [
+  {
+    id: 'tpl-prework-welcome', builtIn: true, taskId: 'w2',
+    html: "<div><span style=\"font-size:16pt\"><b>Brightpath Change Management Certification Program \u2013 Northwind Public Service Academy {{startDate}} \u2013 {{endDate}}</b></span></div><div><br></div><div>Dear all,</div><div><br></div><div>Time flies and we are looking forward to welcoming you to your In-Person 3-day Instructor-Led Brightpath Practitioner Certification Program.</div><div><br></div><div><b>Pre-work Requirements</b></div><div><br></div><div><b><u>Pre-work Template</u></b></div><div>For those who have completed it on your Brightpath Portal Account, a big thank you!</div><div><br></div><div><b>Action required:</b> If you have yet to complete your prework pack, please log in to your Brightpath portal and complete it as soon as possible</div><div>Pls complete pre-work by <b><u>{{preworkDeadline}} latest.</u></b></div><div>You need working knowledge of these project details to apply the Change Management tools and techniques that we\u2019ll be imparting to you.</div><div><br></div><div><b>Brightpath Portal and review your Resources</b></div><div>Have you set up your Brightpath Portal and explored your Practitioner tools within Learning Library, Templates Hub and Toolkit? You should have received an email from portal@brightpath.example to set up your account and login to access your resources and pre-work</div><div><br></div><div><b>Action required:</b> Please reply to us at this email and confirm whether your Brightpath Portal is working for you as we have very limited time in the program to troubleshoot this issue.</div><div><br></div><div><b>Venue &amp; Timings:</b></div><div><br></div><div><b>Day 1 - 3:</b></div><div>{{timing}} Singapore Time (SGT GMT+8)</div><div><br></div><div><b>Training Venue:</b></div><div>{{venue}}</div><div>{{venueAddress}}</div><div><br></div><div><b>Meeting Room:</b> {{meetingRoom}}</div><div><br></div><div>On Day 2 and Day 3, the instructors will be reviewing the knowledge checks 15 minutes before program commencement and to address any issues or remaining questions. The last hour of the program on Day 3 will remain for open discussion with the instructor(s) regarding the presentation delivered on the day and any remaining questions.</div><div><br></div><div>Your instructor will factor in breaks and lunch around the flow of training each day.</div><div><br></div><div><b>OTHER REMINDERS</b></div><div><br></div><div><b><u>Training Materials</u></b></div><div>Your training materials including writing stationery will be provided on site.</div><div><br></div><div><b><u>IT requirements &amp; preparation:</u></b></div><ul><li>Ensure that your computer or laptop is equipped with a stable internet connection and webcam. Our program requires Microsoft Office 2007 or newer. Mac users require Microsoft Office. Please refrain from using tablets or highly secured company computers unless you can proficiently type/work and access everything you need for the program on these devices.</li><li>Please ensure that your laptop has an HDMI/USB-C port for presentation purposes.</li></ul><div><br></div><div>Lastly, we\u2019d like to reiterate that Brightpath Learning has a duty of care to uphold Brightpath certification standards. Please take heed of the vital information below.</div><div><br></div><div><b><u>Attendance and Certification</u></b></div><ul><li>100% program attendance is required for certification. If you anticipate needing time away from the program, kindly inform us before it commences, and we will assist in rescheduling. Please note you could be subject to our Terms and Conditions.</li><li>This is a highly participative and intensive program, and it will require the full commitment of your time and concentration. You will NOT be awarded the \u2018Brightpath Certified Practitioner\u2019 digital credentials if any training is missed. Please avoid scheduling any meetings/calls during the duration of the program.</li><li>All participants need to complete and return the prework document by the given deadline in order to be allowed on the Brightpath program.</li><li>Successful program completion involves passing daily knowledge checks and delivering a presentation on your chosen project.</li></ul><div><br></div><div>Should you have any queries regarding your Change Management Certification Program preparations, please feel free to reach out to us at <a href=\"mailto:training@brightpath.example\">training@brightpath.example</a></div><div><br></div><div>Thank you and see you soon!</div><div><br></div><div>Training &amp; Delivery Team</div><div>Brightpath</div><div><br></div><div>Email Address:</div><div><a href=\"mailto:training@brightpath.example\">training@brightpath.example</a></div><div><br></div><div>Website: <a href=\"https://www.brightpath.example\">www.brightpath.example</a></div>",
+    name: 'Pre-work and welcome',
+    subject: 'Brightpath Change Management Certification Program \u2013 Northwind Public Service Academy {{startDate}} \u2013 {{endDate}}',
+    body: [
+      'Dear all,',
+      '',
+      'Time flies and we are looking forward to welcoming you to your In-Person 3-day Instructor-Led Brightpath Practitioner Certification Program.',
+      '',
+      '**Pre-work Requirements**',
+      '',
+      '**Pre-work Template**',
+      'For those who have completed it on your Brightpath Portal Account, a big thank you!',
+      '',
+      '**Action required:** If you have yet to complete your prework pack, please log in to your Brightpath portal and complete it as soon as possible',
+      'Pls complete pre-work by **{{preworkDeadline}}** latest.',
+      'You need working knowledge of these project details to apply the Change Management tools and techniques that we\u2019ll be imparting to you.',
+      '',
+      '**Brightpath Portal and review your Resources**',
+      'Have you set up your Brightpath Portal and explored your Practitioner tools within Learning Library, Templates Hub and Toolkit? You should have received an email from portal@brightpath.example to set up your account and login to access your resources and pre-work',
+      '',
+      '**Action required:** Please reply to us at this email and confirm whether your Brightpath Portal is working for you as we have very limited time in the program to troubleshoot this issue.',
+      '',
+      '**Venue & Timings:**',
+      '',
+      '**Day 1 - 3:**',
+      '{{timing}} Singapore Time (SGT GMT+8)',
+      '',
+      '**Training Venue:**',
+      '{{venue}}',
+      '{{venueAddress}}',
+      '',
+      '**Meeting Room:** {{meetingRoom}}',
+      '',
+      'On Day 2 and Day 3, the instructors will be reviewing the knowledge checks 15 minutes before program commencement and to address any issues or remaining questions. The last hour of the program on Day 3 will remain for open discussion with the instructor(s) regarding the presentation delivered on the day and any remaining questions.',
+      '',
+      'Your instructor will factor in breaks and lunch around the flow of training each day.',
+      '',
+      '**OTHER REMINDERS**',
+      '',
+      '**Training Materials**',
+      'Your training materials including writing stationery will be provided on site.',
+      '',
+      '**IT requirements & preparation:**',
+      '',
+      '- Ensure that your computer or laptop is equipped with a stable internet connection and webcam. Our program requires Microsoft Office 2007 or newer. Mac users require Microsoft Office. Please refrain from using tablets or highly secured company computers unless you can proficiently type/work and access everything you need for the program on these devices.',
+      '- Please ensure that your laptop has an HDMI/USB-C port for presentation purposes.',
+      '',
+      'Lastly, we\u2019d like to reiterate that Brightpath Learning has a duty of care to uphold Brightpath certification standards. Please take heed of the vital information below.',
+      '',
+      '**Attendance and Certification**',
+      '',
+      '- 100% program attendance is required for certification. If you anticipate needing time away from the program, kindly inform us before it commences, and we will assist in rescheduling. Please note you could be subject to our Terms and Conditions.',
+      '- This is a highly participative and intensive program, and it will require the full commitment of your time and concentration. You will NOT be awarded the \u2018Brightpath Certified Practitioner\u2019 digital credentials if any training is missed. Please avoid scheduling any meetings/calls during the duration of the program.',
+      '- All participants need to complete and return the prework document by the given deadline in order to be allowed on the Brightpath program.',
+      '- Successful program completion involves passing daily knowledge checks and delivering a presentation on your chosen project.',
+      '',
+      'Should you have any queries regarding your Change Management Certification Program preparations, please feel free to reach out to us at [training@brightpath.example](mailto:training@brightpath.example)',
+      '',
+      'Thank you and see you soon!',
+      '',
+      'Training & Delivery Team',
+      'Brightpath',
+      '',
+      'Email Address:',
+      '[training@brightpath.example](mailto:training@brightpath.example)',
+      '',
+      'Website: [www.brightpath.example](https://www.brightpath.example)'
+    ].join('\n')
+  },
+  {
+    id: 'tpl-dietary-declaration', builtIn: true, taskId: 'e4',
+    name: 'Dietary requirements and declaration form',
+    subject: 'Brightpath Change Management Certification Program {{programmeDates}} - Dietary Requirements and Individual End User Declaration Clause Acknowledgement Form',
+    body: [
+      'Hi all,',
+      '',
+      'Ahead of the training program in 2 weeks\u2019 time, we would need your help to complete the following:',
+      '',
+      '- [Dietary Requirements Survey Form]({{dietaryFormLink}}) \u2013 To let us know if you have/do not have any dietary restrictions for the hotel vendor to take note of for their catered food menu by **{{dietaryDeadline}}**. (Pls complete the form even if you do not have any dietary restrictions.)',
+      '- [Individual End User Declaration Clause Acknowledgement Form]({{declarationFormLink}}) \u2013 To read through the Individual End User Declaration Clause on the Survey Form and submit this form to acknowledge it by **{{declarationDeadline}}**.',
+      '',
+      'Pls fill up and complete the mandatory survey forms (links embedded above) by the respective deadlines indicated above.',
+      '',
+      'Also, pls find the class details below for your reference:',
+      '',
+      '**Date:** {{classDates}}',
+      '**Timing:** {{timing}} on all {{dayCount}} days',
+      '',
+      '**Training Venue:**',
+      '{{venue}}',
+      '{{venueAddress}}',
+      '',
+      '**Meeting Room:**',
+      '{{meetingRoom}}',
+      '',
+      'Thank you and we look forward to seeing you soon! \ud83d\ude0a',
+      '',
+      'Training & Delivery Team',
+      'Brightpath',
+      '[training@brightpath.example](mailto:training@brightpath.example)',
+      '[www.brightpath.example](https://www.brightpath.example)'
+    ].join('\n')
+  }
+];
+
+/* Q&A pre-call Zoom links: kept in the shared data (settings/zoom), not in the page */
+function zoomLinks() { return (state.zoom && Array.isArray(state.zoom.links)) ? state.zoom.links : []; }
+function zoomFor(r) {
+  if (r.qaZoom === 'other') return { host: '', url: r.qaZoomUrl || '', meetingId: r.qaZoomMeetingId || '', passcode: r.qaZoomPasscode || '' };
+  return zoomLinks().find(z => z.id === r.qaZoom) || {};
+}
+function zoomDetails(z) {
+  if (!z.url) return '';
+  return ['Join Zoom Meeting', z.url, z.meetingId ? 'Meeting ID: ' + z.meetingId : '', z.passcode ? 'Passcode: ' + z.passcode : ''].filter(Boolean).join('\n');
+}
+function zoomField(r) {
+  const links = zoomLinks(), cur = r.qaZoom || '', other = cur === 'other';
+  const opts = '<option value="">Not chosen yet</option>' +
+    links.map(z => '<option value="' + esc(z.id) + '"' + (z.id === cur ? ' selected' : '') + '>' + esc(z.host) + (z.note ? ' (' + esc(z.note) + ')' : '') + '</option>').join('') +
+    '<option value="other"' + (other ? ' selected' : '') + '>Other link\u2026</option>';
+  const hid = other ? '' : ' hidden';
+  return '<div class="fieldset-title">Q&amp;A pre-call Zoom</div>' +
+    '<div class="field full"><label for="f-qaZoom">Zoom link (by host)</label><select id="f-qaZoom" name="qaZoom">' + opts + '</select>' +
+    '<div class="help">' + (links.length ? 'From the \u201cZoom Call Links for Q&amp;A pre call\u201d sheet. Choose Other to paste a different link.' : 'No saved Zoom links yet. Choose Other to paste one.') + '</div></div>' +
+    '<div class="field full zoom-other"' + hid + '><label for="f-qaZoomUrl">Zoom link</label><input id="f-qaZoomUrl" name="qaZoomUrl" type="url" placeholder="https://zoom.example/j/..." value="' + esc(r.qaZoomUrl || '') + '"></div>' +
+    '<div class="field zoom-other"' + hid + '><label for="f-qaZoomMeetingId">Meeting ID</label><input id="f-qaZoomMeetingId" name="qaZoomMeetingId" value="' + esc(r.qaZoomMeetingId || '') + '"></div>' +
+    '<div class="field zoom-other"' + hid + '><label for="f-qaZoomPasscode">Passcode</label><input id="f-qaZoomPasscode" name="qaZoomPasscode" value="' + esc(r.qaZoomPasscode || '') + '"></div>';
+}
+const PLACEHOLDERS = [
+  ['programmeDates', 'Program dates', r => programmeDatesText(r)],
+  ['classDates', 'Class dates, each day', r => classDatesText(r)],
+  ['startDate', 'Start date', r => dmy(r.startDate)],
+  ['endDate', 'End date', r => dmy(r.endDate || r.startDate)],
+  ['dayCount', 'Number of days', r => r.startDate ? String(programmeDays(r).length) : ''],
+  ['timing', 'Class timing', r => NPSA_TIMING],
+  ['venue', 'Venue or hotel name', r => r.venue],
+  ['venueAddress', 'Venue address', r => r.venueAddress],
+  ['meetingRoom', 'Meeting room', r => r.meetingRoom],
+  ['dietaryDeadline', 'Dietary form deadline', r => longDate(dietaryDeadline(r))],
+  ['declarationDeadline', 'Declaration form deadline', r => r.startDate ? longDate(declarationDeadline(r)) : ''],
+  ['dietaryFormLink', 'Dietary form link', r => r.dietaryFormLink],
+  ['declarationFormLink', 'Declaration form link', r => r.declarationFormLink || DECLARATION_FORM_LINK],
+  ['preworkDeadline', 'Pre-work deadline', r => longDate(preworkDeadline(r))],
+  ['qaDate', 'Q&A date', r => longDate(qaDate(r))],
+  ['qaTime', 'Q&A time', r => QA_TIME],
+  ['qaZoomDetails', 'Q&A Zoom details (link, ID, passcode)', r => zoomDetails(zoomFor(r))],
+  ['qaZoomLink', 'Q&A Zoom link', r => zoomFor(r).url],
+  ['qaZoomMeetingId', 'Q&A Zoom meeting ID', r => zoomFor(r).meetingId],
+  ['qaZoomPasscode', 'Q&A Zoom passcode', r => zoomFor(r).passcode],
+  ['qaZoomHost', 'Q&A Zoom host', r => zoomFor(r).host],
+  ['participants', 'Number of participants', r => r.participants],
+  ['instructor', 'Instructor in charge', r => r.instructor],
+  ['runName', 'Run name', r => r.name]
+];
+const SAMPLE_RUN = () => ({ name: 'NPSA Sample Run', startDate: off(today(), 21), endDate: off(today(), 23),
+  venue: 'Sample Hotel Singapore', venueAddress: '1 Sample Road\nSingapore 000000', meetingRoom: 'Level 2 Jade Room',
+  dietaryFormLink: 'https://forms.office.com', declarationFormLink: 'https://forms.office.com' });
+
+/* NPSA fixed rules */
+const NPSA_TIMING = '9:00am to 6:00pm';
+const QA_TIME = '6:00pm to 6:30pm';
+const DECLARATION_FORM_LINK = 'https://forms.example.com/r/demo-declaration';   // standard declaration form, used unless a run sets its own
+function dietaryDeadline(r) { return off(r.startDate, -14); }              // 2 weeks before program
+function preworkDeadline(r) {                                               // 5 working days (Mon-Fri) before program
+  if (!r.startDate) return null; let d = r.startDate, n = 0;
+  while (n < 5) { d = off(d, -1); const w = parse(d).getUTCDay(); if (w !== 0 && w !== 6) n++; }
+  return d;
+}
+function qaDate(r) {                                                        // Wednesday of the week before the program
+  if (!r.startDate) return null; const w = parse(r.startDate).getUTCDay();
+  return off(off(r.startDate, -((w + 6) % 7)), -5);
+}
+function monthName(s) { return parse(s).toLocaleDateString('en-GB', { month: 'long', timeZone: 'UTC' }); }
+function dmy(s) { return s ? parse(s).getUTCDate() + ' ' + monthName(s) + ' ' + parse(s).getUTCFullYear() : ''; }
+function longDate(s) { return s ? parse(s).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) : ''; }
+function programmeDatesText(r) {
+  if (!r.startDate) return '';
+  const a = r.startDate, b = r.endDate && r.endDate > a ? r.endDate : a;
+  if (a === b) return dmy(a);
+  const A = parse(a), B = parse(b);
+  if (A.getUTCFullYear() !== B.getUTCFullYear()) return dmy(a) + ' \u2013 ' + dmy(b);
+  if (A.getUTCMonth() !== B.getUTCMonth()) return A.getUTCDate() + ' ' + monthName(a) + ' \u2013 ' + dmy(b);
+  return A.getUTCDate() + '\u2013' + dmy(b);
+}
+function classDatesText(r) {
+  const d = programmeDays(r); if (!d.length) return '';
+  if (d.length === 1) return dmy(d[0]);
+  const sameMonth = d.every(x => x.slice(0, 7) === d[0].slice(0, 7));
+  if (!sameMonth || d.length > 6) return programmeDatesText(r);
+  const nums = d.map(x => parse(x).getUTCDate());
+  return nums.slice(0, -1).join(', ') + ' & ' + nums[nums.length - 1] + ' ' + monthName(d[0]) + ' ' + parse(d[0]).getUTCFullYear();
+}
+
+/* ---------- Formatted (rich) template bodies ----------
+   Templates are stored as simple HTML with {{placeholders}}. Older templates
+   written in the plain **bold** / [link](url) style are converted on the fly. */
+const RICH_TAGS = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', SPAN: 'span', FONT: 'span', A: 'a', P: 'div', DIV: 'div', BR: 'br', UL: 'ul', OL: 'ol', LI: 'li', H1: 'div', H2: 'div', H3: 'div', H4: 'div' };
+const DROP_TAGS = /^(SCRIPT|STYLE|META|TITLE|HEAD|LINK|IFRAME|OBJECT|EMBED|SVG|IMG|VIDEO|AUDIO|TEMPLATE|NOSCRIPT)$/i;
+const HEADING_SIZE = { H1: '16pt', H2: '14pt', H3: '12pt', H4: '11pt' };
+const FONT_SIZE = { 1: '8pt', 2: '10pt', 3: '12pt', 4: '14pt', 5: '18pt', 6: '24pt', 7: '36pt' };
+function markupToHtml(body) {
+  const inline = l => esc(l).replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, (m, t, u) => '<a href="' + u + '">' + t + '</a>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  let out = '', inList = false;
+  String(body || '').split('\n').forEach(l => {
+    if (/^- /.test(l)) { if (!inList) { out += '<ul>'; inList = true; } out += '<li>' + inline(l.slice(2)) + '</li>'; return; }
+    if (inList) { out += '</ul>'; inList = false; }
+    out += l.trim() ? '<div>' + inline(l) + '</div>' : '<div><br></div>';
+  });
+  if (inList) out += '</ul>';
+  return out;
+}
+function toPt(v) {
+  const n = parseFloat(v); if (!n) return '';
+  if (/px$/.test(v)) return (Math.round(n * 0.75 * 2) / 2) + 'pt';
+  if (/pt$/.test(v)) return (Math.round(n * 2) / 2) + 'pt';
+  return '';
+}
+function sanitizeRich(html) {
+  const src = new DOMParser().parseFromString('<body>' + String(html || '') + '</body>', 'text/html').body;
+  const out = document.createElement('div');
+  const walk = (node, parent) => {
+    Array.from(node.childNodes).forEach(n => {
+      if (n.nodeType === 3) { parent.appendChild(document.createTextNode(n.nodeValue.replace(/[\r\n]+/g, ' '))); return; }
+      if (n.nodeType !== 1) return;
+      const tag = n.tagName.toUpperCase();
+      if (DROP_TAGS.test(tag)) return;
+      const to = RICH_TAGS[tag];
+      if (!to) { walk(n, parent); return; }
+      const el = document.createElement(to);
+      if (to === 'a') { const h = (n.getAttribute('href') || '').trim(); if (/^(https?:|mailto:|\{\{)/i.test(h)) el.setAttribute('href', h); }
+      if (to !== 'br') {
+        const st = n.style || {};
+        const fs = toPt(st.fontSize || '') || HEADING_SIZE[tag] || (tag === 'FONT' ? FONT_SIZE[n.getAttribute('size')] : '');
+        if (fs) el.style.fontSize = fs;
+        if (/bold|^[6-9]00$/.test(st.fontWeight || '') || /^H\d$/.test(tag)) el.style.fontWeight = 'bold';
+        if (st.fontStyle === 'italic') el.style.fontStyle = 'italic';
+        if (/underline/.test((st.textDecorationLine || '') + ' ' + (st.textDecoration || ''))) el.style.textDecoration = 'underline';
+      }
+      walk(n, el);
+      if (to === 'span' && !el.getAttribute('style')) { while (el.firstChild) parent.appendChild(el.firstChild); return; }
+      if (to === 'a' && !el.getAttribute('href')) { while (el.firstChild) parent.appendChild(el.firstChild); return; }
+      if (to === 'div' && !el.childNodes.length) el.appendChild(document.createElement('br'));
+      parent.appendChild(el);
+    });
+  };
+  walk(src, out);
+  return out.innerHTML;
+}
+function htmlToText(root) {
+  let out = '';
+  const walk = n => Array.from(n.childNodes).forEach(c => {
+    if (c.nodeType === 3) { out += c.nodeValue; return; }
+    if (c.nodeType !== 1) return;
+    const t = c.tagName;
+    if (t === 'BR') { out += '\n'; return; }
+    if (t === 'LI') out += '\u2022 ';
+    walk(c);
+    if (t === 'A') { const h = (c.getAttribute('href') || '').replace(/^mailto:/, ''); if (h && h !== c.textContent.trim()) out += ' (' + h + ')'; }
+    if (/^(DIV|P|LI)$/.test(t) && !out.endsWith('\n')) out += '\n';
+  });
+  walk(root);
+  return out.replace(/\u00a0/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+}
+function templateHtml(tpl) { return sanitizeRich(tpl.html || markupToHtml(tpl.body || '')); }
+
+function fillTemplate(tpl, run) {
+  const vals = {}; const labels = {}; const missing = [];
+  PLACEHOLDERS.forEach(([k, label, fn]) => { vals[k] = String(fn(run) || '').trim(); labels[k] = label; });
+  const miss = k => { if (!missing.includes(labels[k] || k)) missing.push(labels[k] || k); };
+  const val = k => { if (!(k in vals)) return '{{' + k + '}}'; if (!vals[k]) miss(k); return vals[k]; };
+  const re = /\{\{\s*(\w+)\s*\}\}/g;
+  const subject = (tpl.subject || '').replace(re, (m, k) => { const v = val(k); return v || '[' + (labels[k] || k) + ']'; });
+
+  const doc = document.createElement('div');
+  doc.innerHTML = templateHtml(tpl);
+  doc.querySelectorAll('a').forEach(a => {
+    const url = (a.getAttribute('href') || '').replace(re, (m, k) => val(k)).trim();
+    if (url && !/\{\{/.test(url)) { a.setAttribute('href', url); a.style.color = '#0563C1'; a.style.textDecoration = 'underline'; }
+    else { const mk = document.createElement('mark'); mk.textContent = '[link missing]'; a.after(document.createTextNode(' '), mk); a.replaceWith(...Array.from(a.childNodes)); }
+  });
+  const tw = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT); const nodes = [];
+  while (tw.nextNode()) nodes.push(tw.currentNode);
+  nodes.forEach(n => {
+    const txt = n.nodeValue; if (!/\{\{/.test(txt)) return;
+    const frag = document.createDocumentFragment(); let last = 0;
+    txt.replace(re, (m, k, off) => {
+      frag.append(txt.slice(last, off));
+      if (!(k in vals)) frag.append(m);
+      else {
+        const v = val(k);
+        if (v) v.split('\n').forEach((line, i) => {
+          if (i) frag.append(document.createElement('br'));
+          const u = line.trim();
+          if (/^https?:\/\/\S+$/.test(u) && !(n.parentElement && n.parentElement.closest('a'))) {
+            const a = document.createElement('a'); a.href = u; a.textContent = u; a.style.color = '#0563C1'; a.style.textDecoration = 'underline'; frag.append(a);
+          } else frag.append(line);
+        });
+        else { const mk = document.createElement('mark'); mk.textContent = '[' + (labels[k] || k) + ']'; frag.append(mk); }
+      }
+      last = off + m.length; return m;
+    });
+    frag.append(txt.slice(last));
+    n.replaceWith(frag);
+  });
+  doc.querySelectorAll('div').forEach(d => { d.style.margin = '0'; });
+  doc.querySelectorAll('ul,ol').forEach(l => { l.style.margin = '0'; l.style.paddingLeft = '24px'; });
+  doc.querySelectorAll('li').forEach(l => { l.style.margin = '0 0 4px'; });
+  doc.querySelectorAll('mark').forEach(m => { m.style.background = '#FCEDD4'; m.style.color = '#8a5d0c'; });
+  const html = '<div style="font-family:Aptos,Calibri,Arial,sans-serif;font-size:11pt;line-height:1.4;color:#000">' + doc.innerHTML + '</div>';
+  const text = htmlToText(doc);
+  return { subject, html, text, missing };
+}
+function templatesFor(taskId) { return (state.templates || []).filter(t => t.taskId === taskId); }
+function allTaskOptions() {
+  return STAGES.flatMap(s => s.tasks({}).map(t => ({ id: t.id, label: s.name + ': ' + t.text })));
+}
+function taskLabel(id) { const o = allTaskOptions().find(t => t.id === id); return o ? o.label : ''; }
+function ensureTemplates() {
+  if (!Array.isArray(state.templates)) state.templates = [];
+  DEFAULT_TEMPLATES.forEach(d => { if (!state.templates.some(t => t.id === d.id)) state.templates.push(Object.assign({}, d)); });
+}
+function mergeTemplates(list) {
+  if (!Array.isArray(list)) return 0; let n = 0; if (!online) ensureTemplates();
+  list.forEach(t => {
+    if (!t || !t.id) return;
+    const i = state.templates.findIndex(x => x.id === t.id);
+    const isDefaultCopy = DEFAULT_TEMPLATES.some(d => d.id === t.id) && !t.updatedAt;
+    if (isDefaultCopy) return;
+    if (i === -1 || (t.updatedAt || '') > (state.templates[i].updatedAt || '')) {
+      if (i === -1) state.templates.push(t); else state.templates[i] = t;
+      n++; if (online) dbWrite('templates/' + t.id, 'set', clone(t));
+    }
+  });
+  if (!online) save(); return n;
+}
+async function copyRich(html, text) {
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }), 'text/plain': new Blob([text], { type: 'text/plain' }) })]);
+      return true;
+    }
+  } catch (e) {}
+  return copyBySelection(html);
+}
+async function copyPlain(text) {
+  try { if (navigator.clipboard) { await navigator.clipboard.writeText(text); return true; } } catch (e) {}
+  return copyBySelection(esc(text));
+}
+function copyBySelection(html) {
+  const el = document.createElement('div');
+  el.contentEditable = 'true'; el.innerHTML = html;
+  el.style.cssText = 'position:fixed;left:-9999px;top:0;background:#fff';
+  document.body.appendChild(el);
+  const range = document.createRange(); range.selectNodeContents(el);
+  const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+  let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+  sel.removeAllRanges(); el.remove(); return ok;
+}
+
+/* ============================ Dates ============================ */
+function parse(s) { return s ? new Date(s + 'T00:00:00Z') : null; }
+function iso(d) { return d.toISOString().slice(0, 10); }
+function off(s, n) { return s ? iso(new Date(parse(s).getTime() + n * 864e5)) : null; }
+function today() { const t = new Date(); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); }
+function days(a, b) { return Math.round((parse(b) - parse(a)) / 864e5); }
+function fmt(s, withYear) {
+  if (!s) return '';
+  const o = { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' };
+  if (withYear) o.year = 'numeric';
+  return parse(s).toLocaleDateString('en-GB', o);
+}
+function fridayBefore(s) { const d = parse(s).getUTCDay(); const monday = off(s, -((d + 6) % 7)); return off(monday, -3); }
+function declarationDeadline(r) { return off(r.startDate, -14); }          // 2 weeks before program
+function programmeDays(r) {
+  if (!r.startDate) return [];
+  const end = r.endDate && r.endDate >= r.startDate ? r.endDate : r.startDate;
+  const out = []; let d = r.startDate;
+  while (d <= end && out.length < 21) { out.push(d); d = off(d, 1); }
+  return out;
+}
+
+/* ============================ Storage ============================ */
+const KEY = 'npsa-run-tracker-demo:v1';
+let state = { runs: [] };
+let storageOK = true;
+let ui = { editing: false, openNotes: {}, confirmDelete: false, preview: null, editTpl: null };
+let route = { view: 'home', id: null };
+function routeFromHash(h) {
+  if (h === '#new') return { view: 'new', id: null };
+  if (h === '#templates') return { view: 'templates', id: null };
+  const m = (h || '').match(/^#run\/(.+)$/);
+  if (m) { try { return { view: 'run', id: decodeURIComponent(m[1]) }; } catch (e) {} }
+  return { view: 'home', id: null };
+}
+function go(view, id) {
+  route = { view, id: id || null };
+  ui = { editing: false, openNotes: {}, confirmDelete: false, preview: null, editTpl: null };
+  const h = view === 'new' ? '#new' : view === 'templates' ? '#templates' : view === 'run' ? '#run/' + encodeURIComponent(id) : '';
+  try { history.replaceState(null, '', h || location.pathname + location.search); } catch (e) {}
+  render();
+  try { window.scrollTo(0, 0); } catch (e) {}
+}
+function toast(msg) {
+  let el = document.getElementById('toast');
+  if (!el) { el = document.createElement('div'); el.id = 'toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+  el.textContent = msg; el.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => { el.hidden = true; }, 3500);
+}
+
+function load() {
+  try { const raw = localStorage.getItem(KEY); if (raw) state = JSON.parse(raw); }
+  catch (e) { storageOK = false; }
+  if (!state || !Array.isArray(state.runs)) state = { runs: [] };
+  state.runs.forEach(normalizeRun);
+  ensureTemplates();
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); storageOK = true; }
+  catch (e) { storageOK = false; }
+}
+function mergeRuns(incoming) {
+  let added = 0;
+  incoming.forEach(r => {
+    if (!r || !r.id) return;
+    const i = state.runs.findIndex(x => x.id === r.id);
+    normalizeRun(r);
+    let changed = false;
+    if (i === -1) { state.runs.push(r); changed = true; }
+    else if ((r.updatedAt || '') > (state.runs[i].updatedAt || '')) { state.runs[i] = r; changed = true; }
+    if (changed) { added++; if (online) dbWrite('runs/' + r.id, 'set', clone(r)); }
+  });
+  if (!online) save();
+  return added;
+}
+function getRun(id) { return state.runs.find(r => r.id === id); }
+
+/* ============================ Shared store (online) ============================
+   When the page is opened in Claude, runs and templates live in the artifact's
+   shared database so everyone with access sees the same data, live.
+   Opened anywhere else, it falls back to this browser's storage.
+   ============================================================================= */
+let db = null, userCap = null, me = null, online = false, readOnly = false;
+let connecting = false; // demo copy: runs only on the embedded sample data
+let tplDocs = [], pendingRender = false;
+const nameCache = {};
+function emailFontSize() { const n = Number((state.settings || {}).emailFontSize); return n >= 8 && n <= 20 ? n : 11; }
+function templateFontSize(t) { return 11; }
+function setEmailFontSize(n) {
+  n = Math.max(8, Math.min(20, n));
+  if (n === emailFontSize()) { toast(n === 8 ? 'That\u2019s the smallest size.' : 'That\u2019s the largest size.'); return; }
+  state.settings = Object.assign({}, state.settings, { emailFontSize: n });
+  if (online) dbWrite('settings/email', 'set', clone(state.settings)); else save();
+  const y = window.scrollY; render(); window.scrollTo(0, y);
+}
+const writeQueues = {};
+const clone = o => JSON.parse(JSON.stringify(o || {}));
+
+function normalizeRun(run) {
+  run.tasks = run.tasks || {};
+  const c = run.custom || {};
+  Object.keys(c).forEach(stage => {
+    if (Array.isArray(c[stage])) { const m = {}; c[stage].forEach((t, i) => { if (t && t.id) m[t.id] = { text: t.text, at: i }; }); c[stage] = m; }
+  });
+  run.custom = c;
+  return run;
+}
+function customList(run, stage) {
+  const c = (run.custom || {})[stage]; if (!c) return [];
+  return Object.entries(c).filter(([k, v]) => v && v.text).sort((a, b) => (a[1].at || 0) - (b[1].at || 0)).map(([id, v]) => ({ id, text: v.text, due: v.due || null }));
+}
+function writeFailed(err) {
+  const c = err && err.code;
+  if (c === 'invalid_argument') {
+    if (!readOnly) { readOnly = true; render(); }
+    toast('You have view-only access, so that change wasn\u2019t saved. Ask the owner to make you a Contributor or Editor.');
+  } else if (c === 'quota_exceeded') toast('Shared storage is full. Delete old runs to make room.');
+  else toast('A change couldn\u2019t be saved. Check your connection and try again.');
+}
+function dbWrite(path, op, data) {
+  if (!db) return;
+  const ref = db.doc(path);
+  const attempt = () => op === 'delete' ? ref.delete() : ref[op](data);
+  writeQueues[path] = (writeQueues[path] || Promise.resolve()).then(attempt).catch(err => {
+    if (err && err.code === 'unavailable') return new Promise(r => setTimeout(r, 500 + Math.random() * 800)).then(attempt).catch(writeFailed);
+    writeFailed(err);
+  });
+}
+function persistRun(run, patch) {
+  run.updatedAt = new Date().toISOString(); run.updatedBy = me || null;
+  if (!online) { save(); return; }
+  if (patch) dbWrite('runs/' + run.id, 'update', Object.assign({}, patch, { updatedAt: run.updatedAt, updatedBy: run.updatedBy }));
+  else dbWrite('runs/' + run.id, 'set', clone(run));
+}
+function removeRun(id) {
+  state.runs = state.runs.filter(r => r.id !== id);
+  if (online) dbWrite('runs/' + id, 'delete'); else save();
+}
+function persistTemplate(t) { t.updatedAt = new Date().toISOString(); if (online) dbWrite('templates/' + t.id, 'set', clone(t)); else save(); }
+function removeTemplate(id) {
+  state.templates = state.templates.filter(t => t.id !== id);
+  if (online) dbWrite('templates/' + id, 'delete'); else save();
+}
+function computeTemplates() {
+  const byId = {}; tplDocs.forEach(d => { byId[d.id] = d; });
+  const list = DEFAULT_TEMPLATES.map(d => {
+    const o = byId[d.id]; if (!o) return Object.assign({}, d);
+    const m = Object.assign({}, d, o, { builtIn: true }); if (!o.html) delete m.html; return m;
+  });
+  tplDocs.forEach(d => { if (!DEFAULT_TEMPLATES.some(x => x.id === d.id)) list.push(d); });
+  state.templates = list;
+}
+function isBusy() {
+  if (route.view === 'new' || ui.editing || ui.editTpl) return true;
+  const a = document.activeElement;
+  return !!(a && app.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== 'checkbox');
+}
+function softRender() {
+  if (isBusy()) { pendingRender = true; return; }
+  const y = window.scrollY; render(); window.scrollTo(0, y);
+}
+function who(id) {
+  if (!id) return '';
+  if (id === me) return '<span class="who">you</span>';
+  return '<span class="who" data-uid="' + esc(id) + '">' + esc(nameCache[id] || (userCap ? '\u2026' : 'a colleague')) + '</span>';
+}
+function resolveNames() {
+  if (!userCap) return;
+  const ids = [...new Set([...app.querySelectorAll('[data-uid]')].map(e => e.dataset.uid))].filter(Boolean);
+  if (!ids.length) return;
+  userCap.profiles(ids).then(ps => {
+    ids.forEach(id => { nameCache[id] = (ps[id] && ps[id].name) || 'a colleague'; });
+    app.querySelectorAll('[data-uid]').forEach(e => { e.textContent = nameCache[e.dataset.uid] || 'a colleague'; });
+  }).catch(() => {});
+}
+async function connect() {
+  if (!connecting) return;
+  try { db = await window.claude.use('db'); } catch (e) { db = null; }
+  if (!db) { connecting = false; render(); return; }
+  try { userCap = await window.claude.use('user'); } catch (e) { userCap = null; }
+  if (userCap) {
+    try { me = await userCap.id(); } catch (e) {}
+    try { if ((await userCap.can('data.write')) === false) readOnly = true; } catch (e) {}
+  }
+  online = true;
+  state = { runs: [], templates: [] }; computeTemplates();
+  db.collection('runs').onSnapshot(snap => {
+    state.runs = snap.docs.filter(d => d.exists).map(d => normalizeRun(Object.assign(clone(d.data()), { id: d.id })));
+    if (connecting) { connecting = false; render(); } else softRender();
+  }, () => { toast('Lost the connection to the shared runs. Reload the page to reconnect.'); });
+  db.collection('templates').onSnapshot(snap => {
+    tplDocs = snap.docs.filter(d => d.exists).map(d => Object.assign(clone(d.data()), { id: d.id }));
+    computeTemplates(); if (!connecting) softRender();
+  }, () => {});
+  db.doc('settings/zoom').onSnapshot(snap => {
+    state.zoom = snap.exists ? clone(snap.data()) : {};
+    if (!connecting) softRender();
+  }, () => {});
+  db.doc('settings/email').onSnapshot(snap => {
+    state.settings = snap.exists ? clone(snap.data()) : {};
+    if (!connecting) softRender();
+  }, () => {});
+}
+document.addEventListener('focusout', () => setTimeout(() => { if (pendingRender && !isBusy()) softRender(); }, 0));
+function uid() { return 'run-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+/* ============================ Progress ============================ */
+const EXTRA_STAGE = { id: 'misc', name: 'Added for this run', when: '', tasks: () => [] };
+function stagesFor(run) {
+  return STAGES.concat([EXTRA_STAGE]).map(s => {
+    const custom = customList(run, s.id).map(c => Object.assign({ custom: true }, c));
+    const items = s.tasks(run).concat(custom).map(t => Object.assign({}, t, { st: (run.tasks || {})[t.id] || {} }));
+    const done = items.filter(t => t.st.done).length;
+    return Object.assign({}, s, { items, done, total: items.length });
+  });
+}
+/* All tasks in one list, in due-date order. A task with no fixed date sits
+   right after the dated task before it in the same theme. */
+function timeline(run) {
+  const out = []; let n = 0;
+  stagesFor(run).forEach(st => {
+    const firstDated = (st.items.find(i => i.due) || {}).due || null;
+    let anchor = firstDated;
+    st.items.forEach((t, i) => {
+      if (t.due) anchor = t.due;
+      out.push(Object.assign({}, t, { stageId: st.id, stageName: st.name, eff: t.due || anchor || null, seq: n++,
+        hint: i === 0 && st.note ? (t.hint ? t.hint + ' ' : '') + st.note : t.hint }));
+    });
+  });
+  return out.sort((a, b) => (a.eff || '9999') < (b.eff || '9999') ? -1 : (a.eff || '9999') > (b.eff || '9999') ? 1 : a.seq - b.seq);
+}
+function relDay(d) {
+  const n = days(today(), d);
+  if (n === 0) return 'today'; if (n === 1) return 'tomorrow'; if (n === -1) return 'yesterday';
+  return n > 0 ? 'in ' + n + ' days' : Math.abs(n) + ' days ago';
+}
+function hideDone() { try { return localStorage.getItem('npsa-hide-done') === '1'; } catch (e) { return !!ui.hideDone; } }
+function setHideDone(v) { ui.hideDone = v; try { localStorage.setItem('npsa-hide-done', v ? '1' : '0'); } catch (e) {} }
+function summary(run) {
+  const stages = stagesFor(run);
+  let currentIdx = stages.findIndex(s => s.done < s.total);
+  const total = stages.reduce((a, s) => a + s.total, 0);
+  const done = stages.reduce((a, s) => a + s.done, 0);
+  const t = today();
+  const open = stages.flatMap(s => s.items).filter(i => !i.st.done && i.due).sort((a, b) => a.due < b.due ? -1 : 1);
+  const nextTask = timeline(run).find(i => !i.st.done) || null;
+  return { stages, currentIdx, total, done, pct: total ? Math.round(done / total * 100) : 0,
+    overdue: open.filter(i => i.due < t).length, next: open[0] || null, nextTask };
+}
+
+/* ============================ Helpers ============================ */
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function dateRange(r) {
+  if (!r.startDate) return 'Dates not set';
+  if (!r.endDate || r.endDate === r.startDate) return fmt(r.startDate, true);
+  return fmt(r.startDate) + ' to ' + fmt(r.endDate, true);
+}
+function countdown(r) {
+  if (!r.startDate) return { num: '–', lbl: 'Add a start date to see the countdown' };
+  const t = today(); const end = r.endDate && r.endDate >= r.startDate ? r.endDate : r.startDate;
+  const d = days(t, r.startDate);
+  if (d > 0) return { num: d, lbl: d === 1 ? 'day to program start' : 'days to program start' };
+  if (t <= end) { const n = days(r.startDate, t) + 1, m = days(r.startDate, end) + 1; return { num: 'Day ' + n, lbl: m > 1 ? 'of ' + m + ', program running' : 'Program is today' }; }
+  const a = days(end, t); return { num: a, lbl: a === 1 ? 'day since the program ended' : 'days since the program ended' };
+}
+function chip(t) {
+  if (t.st.done) return '<span class="chip chip-done">Done ' + esc(t.st.doneAt ? fmt(t.st.doneAt) : '') + (t.st.doneBy ? ' by ' + who(t.st.doneBy) : '') + '</span>';
+  if (!t.due) return t.needs ? '<span class="chip chip-missing">Add the ' + esc(FIELD_NAMES[t.needs]) + ' to set a due date</span>' : '';
+  const d = days(today(), t.due);
+  if (d < 0) return '<span class="chip chip-overdue">Overdue, was ' + esc(fmt(t.due)) + '</span>';
+  if (d === 0) return '<span class="chip chip-soon">Due today</span>';
+  if (d <= 3) return '<span class="chip chip-soon">Due ' + esc(fmt(t.due)) + '</span>';
+  return '<span class="chip">Due ' + esc(fmt(t.due)) + '</span>';
+}
+async function download(name, content, type) {
+  if (window.claude && typeof window.claude.use === 'function') {
+    let dl = null; try { dl = await window.claude.use('downloads'); } catch (e) {}
+    if (dl) { try { await dl.save({ filename: name, data: content }); } catch (e) {} return; }
+  }
+  return downloadLocal(name, content, type);
+}
+function downloadLocal(name, content, type) {
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  try { document.body.appendChild(a); a.click(); a.remove(); }
+  catch (e) { toast('Downloads are blocked here. Open the file in Chrome or Edge to save files.'); }
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function slug(s) { return String(s || 'run').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 60) || 'run'; }
+function storageBanner() {
+  return '<div class="banner no-print">Demo copy: all names, organisations, venues, IDs and links are fictional sample data. Changes stay in this browser only.</div>';
+  if (online) return readOnly ? '<div class="banner no-print">You can view these runs but not change them. Ask the owner to give you Contributor or Editor access.</div>' : '';
+  if (window.claude && typeof window.claude.use === 'function' && !online && storageOK) return '<div class="banner no-print">Shared storage isn’t available right now, so changes are saved only in this browser. Reload the page to try again.</div>';
+  return storageOK ? '' : '<div class="banner no-print">This browser is blocking saved data, so ticks will be lost when you close the page. Use “Save as separate file” or “Back up all runs” before closing, or open this file in Chrome or Edge.</div>';
+}
+
+/* ============================ Views ============================ */
+const app = document.getElementById('app');
+
+function render() {
+  pendingRender = false;
+  document.body.classList.toggle('readonly', readOnly);
+  if (connecting) { app.innerHTML = '<div class="card empty" style="margin-top:40px"><h2>Loading shared runs…</h2></div>'; return; }
+  renderView();
+  resolveNames();
+}
+function renderView() {
+  if (route.view === 'new') return renderForm(null);
+  if (route.view === 'templates') return renderTemplates();
+  if (route.view === 'run') { const run = getRun(route.id); if (run) return ui.editing ? renderForm(run) : renderRun(run); }
+  route = { view: 'home', id: null };
+  renderHome();
+}
+
+function renderHome() {
+  document.title = 'NPSA Run Tracker';
+  const t = today();
+  const sorted = state.runs.slice().sort((a, b) => (a.startDate || '9') < (b.startDate || '9') ? -1 : 1);
+  const active = sorted.filter(r => { const s = summary(r); return s.done < s.total; });
+  const finished = sorted.filter(r => { const s = summary(r); return s.done >= s.total; });
+  const row = r => {
+    const s = summary(r);
+    const stage = s.nextTask ? 'Next: ' + s.nextTask.text : 'All tasks complete';
+    const next = s.next ? (s.next.due < t ? '<span style="color:var(--bad-fg)">' + s.overdue + ' overdue</span>' : 'Next due ' + fmt(s.next.due)) : '';
+    return '<button type="button" class="card run-row" data-action="open" data-id="' + esc(r.id) + '">' +
+      '<div><div class="name">' + esc(r.name) + '</div><div class="small muted">' + esc(r.venue || 'Venue not set') + '</div></div>' +
+      '<div class="small">' + esc(dateRange(r)) + '</div>' +
+      '<div class="small"><div style="font-weight:500">' + esc(stage) + '</div><div class="muted">' + next + '</div></div>' +
+      '<div><div class="small muted" style="margin-bottom:6px">' + s.done + ' of ' + s.total + ' done</div><div class="bar"><span style="width:' + s.pct + '%"></span></div></div>' +
+      '</button>';
+  };
+  app.innerHTML = storageBanner() +
+    '<div class="home-head"><div><h1>NPSA run tracker</h1>' +
+    '<p class="muted">One checklist per NPSA program run, with due dates worked out from the program dates.</p>' +
+    (online ? '<p class="sync">Shared with everyone who can open this page. Changes save automatically.</p>' : '<p class="small muted">Saved in this browser only.</p>') + '</div>' +
+    '<div class="actions no-print"><button class="btn" data-action="templates">Email templates</button><button class="btn" data-action="backup">Back up all runs</button>' +
+    '<button class="btn" data-action="restore">' + (online ? 'Import runs' : 'Restore or import') + '</button>' +
+    '<button type="button" class="btn btn-primary" data-action="new">Start a new run</button></div></div>' +
+    (state.runs.length === 0
+      ? '<div class="card empty"><h2>No runs yet</h2><p class="muted">Start a run when the participant list email arrives, usually 3 weeks before the program. You’ll only need the run name and start date to begin.</p><button type="button" class="btn btn-primary" data-action="new">Start a new run</button></div>'
+      : (active.length ? '<div class="section-label">In progress</div><div class="runs">' + active.map(row).join('') + '</div>' : '') +
+        (finished.length ? '<div class="section-label">Completed</div><div class="runs">' + finished.map(row).join('') + '</div>' : ''));
+}
+
+function renderForm(run) {
+  const r = run || {};
+  const f = (name, label, type, help, full, extra) =>
+    '<div class="field' + (full ? ' full' : '') + '"><label for="f-' + name + '">' + label + '</label>' +
+    '<input id="f-' + name + '" name="' + name + '" type="' + type + '" value="' + esc(r[name] || '') + '"' + (extra || '') + '>' +
+    (help ? '<div class="help">' + help + '</div>' : '') + '</div>';
+  const ta = (name, label, help) =>
+    '<div class="field full"><label for="f-' + name + '">' + label + '</label><textarea id="f-' + name + '" name="' + name + '" rows="3">' + esc(r[name] || '') + '</textarea>' +
+    (help ? '<div class="help">' + help + '</div>' : '') + '</div>';
+  document.title = run ? 'Edit ' + r.name : 'New NPSA run';
+  app.innerHTML = storageBanner() +
+    '<div class="topbar no-print"><button type="button" class="back" data-action="cancel-edit">← ' + (run ? 'Back to run' : 'All runs') + '</button></div>' +
+    '<div class="card" id="run-form">' +
+    '<h1>' + (run ? 'Edit run details' : 'Start a new NPSA run') + '</h1>' +
+    '<p class="muted" style="margin:8px 0 0">Due dates in the checklist are worked out from these dates. You can fill in the rest later.</p>' +
+    '<div class="form-grid">' +
+    f('name', 'Run name', 'text', 'For example, NPSA Leadership Run 4, Nov 2026', true, ' required placeholder="NPSA program run"') +
+    f('startDate', 'Program start date', 'date', '', false, ' required') +
+    f('endDate', 'Program end date', 'date', 'Leave blank for a one-day run.') +
+    f('participants', 'Number of participants', 'number', '', false, ' min="0"') +
+    f('runCode', 'Run reference', 'text', 'PUB run form or internal reference, if any.') +
+    f('sfEventId', 'Salesforce Training Event ID', 'text', 'Optional. Found automatically from the start date the first time you load participants.', false, ' placeholder="a00…"') +
+    f('instructor', 'Instructor in charge', 'text', 'Shared with Syu for the feedback survey.', true) +
+    zoomField(r) +
+    '<div class="fieldset-title">Class details</div>' +
+    f('venue', 'Venue or hotel name', 'text', '') +
+    f('meetingRoom', 'Meeting room', 'text', '', false, ' placeholder="Level 2 Jade Room"') +
+    ta('venueAddress', 'Venue address', 'Line breaks are kept in emails.') +
+    '<div class="field full"><div class="stage-note" style="margin-top:0">Set automatically from the start date: class timing ' + NPSA_TIMING +
+    ', pre-work deadline 5 working days before, dietary form deadline 2 weeks before, declaration form deadline 2 weeks before, and Q&A session the Wednesday of the week before, ' + QA_TIME + '.</div></div>' +
+    '<div class="fieldset-title">Form links for emails</div>' +
+    f('dietaryFormLink', 'Dietary requirements form link', 'url', '', false, ' placeholder="https://forms.office.com/..."') +
+    f('declarationFormLink', 'Declaration form link', 'url', 'Leave blank to use the standard form.', false, ' placeholder="' + DECLARATION_FORM_LINK + '"') +
+    '</div><div class="form-actions"><button class="btn btn-primary" type="button" data-action="save-run">' + (run ? 'Save changes' : 'Create run checklist') + '</button>' +
+    '<button type="button" class="btn" data-action="cancel-edit">Cancel</button></div></div>';
+  const first = document.getElementById('f-name'); if (first && !run) first.focus();
+}
+
+function renderRun(run) {
+  document.title = run.name + ' · NPSA run';
+  const s = summary(run); const c = countdown(run);
+  const fact = (k, v) => v ? '<div><dt>' + k + '</dt><dd>' + esc(v) + '</dd></div>' : '';
+  const qa = run.startDate ? fmt(qaDate(run)) + ', ' + QA_TIME : '';
+  const all = timeline(run), t0 = today(), hide = hideDone();
+  const doneCount = all.filter(t => t.st.done).length;
+  const taskHtml = t => {
+    const noteOpen = ui.openNotes[t.id] || t.st.note;
+    return '<li class="task' + (t.st.done ? ' done' : '') + '">' +
+      '<input type="checkbox" id="t-' + esc(t.id) + '" data-task="' + esc(t.id) + '"' + (t.st.done ? ' checked' : '') + (readOnly ? ' disabled' : '') + '>' +
+      '<div><label for="t-' + esc(t.id) + '">' + esc(t.text) + '</label>' +
+      '<div class="theme-tag">' + esc(t.stageName) + (!t.due && !t.st.done ? ' \u00b7 no fixed date' : '') + '</div>' +
+      (t.hint ? '<div class="hint">' + esc(t.hint) + '</div>' : '') +
+      (noteOpen ? '<input class="note-input" data-note="' + esc(t.id) + '" placeholder="Add a note" value="' + esc(t.st.note || '') + '">' : '') +
+      '<div class="task-tools">' + (noteOpen ? '' : '<button class="linkish" data-action="note" data-id="' + esc(t.id) + '">Add note</button>') +
+      templatesFor(t.id).map(tp => '<button class="linkish email" data-action="preview" data-tpl="' + esc(tp.id) + '">View email</button>').join('') +
+      (t.custom ? '<button class="linkish" data-action="remove-task" data-stage="' + esc(t.stageId) + '" data-id="' + esc(t.id) + '">Remove</button>' : '') + '</div></div>' +
+      '<div>' + chip(t) + '</div></li>';
+  };
+  const overdue = all.filter(t => !t.st.done && t.due && t.due < t0);
+  const rest = all.filter(t => !overdue.includes(t) && !(hide && t.st.done));
+  const groups = []; rest.forEach(t => { const k = t.eff || ''; const g = groups[groups.length - 1]; if (g && g.k === k) g.items.push(t); else groups.push({ k, items: [t] }); });
+  const groupHtml = (title, sub, items, cls) => '<section class="day-group' + (cls ? ' ' + cls : '') + '"><div class="day-head"><h2>' + title + '</h2>' + (sub ? '<span class="when">' + sub + '</span>' : '') + '</div><ul class="tasks">' + items.map(taskHtml).join('') + '</ul></section>';
+  const stages = '<section class="card timeline" id="timeline">' +
+    '<div class="stage-head"><h2>Tasks by due date</h2><label class="toggle no-print"><input type="checkbox" data-action="hide-done"' + (hide ? ' checked' : '') + '> Hide done tasks' + (doneCount ? ' (' + doneCount + ')' : '') + '</label></div>' +
+    (overdue.length ? groupHtml('Overdue', overdue.length + ' task' + (overdue.length === 1 ? '' : 's'), overdue, 'is-overdue') : '') +
+    groups.map(g => {
+      const isToday = g.k === t0;
+      return groupHtml(g.k ? esc(fmt(g.k, true)) : 'No set date', g.k ? relDay(g.k) : '', g.items, isToday ? 'is-today' : (g.k && g.k < t0 ? 'is-past' : ''));
+    }).join('') +
+    (!overdue.length && !groups.length ? '<p class="muted">All tasks are done. Untick \u201cHide done tasks\u201d to see them.</p>' : '') +
+    '<div class="add-row no-print" data-add="misc"><input name="text" placeholder="Add a task for this run only" aria-label="New task">' +
+    '<input name="due" type="date" aria-label="Due date (optional)" title="Due date (optional)">' +
+    '<button class="btn btn-quiet" type="button" data-action="add-task" data-stage="misc">Add</button></div>' +
+    '</section>';
+
+  app.innerHTML = storageBanner() +
+    (ui.confirmDelete ? '<div class="confirm-bar no-print"><span>Delete this run? Its checklist and notes will be removed from this computer.</span><span class="actions"><button type="button" class="btn btn-danger" data-action="delete-yes">Delete run</button><button type="button" class="btn" data-action="delete-no">Keep it</button></span></div>' : '') +
+    '<div class="topbar no-print"><button type="button" class="back" data-action="home">← All runs</button><div class="actions">' +
+    '<button class="btn" data-action="edit">Edit details</button>' +
+    '<button class="btn" data-action="print">Print</button>' +
+    (online ? '' : '<button class="btn" data-action="export-run">Save as separate file</button>') +
+    '<button class="btn btn-danger" data-action="delete">Delete run</button></div></div>' +
+    '<header class="card"><div class="run-head"><div><h1>' + esc(run.name) + '</h1>' +
+    '<dl class="facts">' + fact('Program', dateRange(run)) + fact('Timing', NPSA_TIMING) + fact('Venue', run.venue) + fact('Meeting room', run.meetingRoom) +
+    fact('Participants', run.participants) + fact('Instructor in charge', run.instructor) + fact('Run reference', run.runCode) +
+    fact('Pre-work deadline', run.startDate ? fmt(preworkDeadline(run)) : '') + fact('Dietary form deadline', run.startDate ? fmt(dietaryDeadline(run)) : '') +
+    fact('Declaration form deadline', run.startDate ? fmt(declarationDeadline(run)) : '') + fact('Q&A session', qa) + fact('Q&A Zoom', zoomFor(run).url ? (zoomFor(run).host || 'Other link') + (zoomFor(run).meetingId ? ', ID ' + zoomFor(run).meetingId : '') : '') + '</dl></div>' +
+    '<div class="countdown"><div class="num">' + esc(c.num) + '</div><div class="lbl">' + esc(c.lbl) + '</div></div></div>' +
+    '<div class="overall"><span><strong>' + (s.nextTask ? 'Next: ' + esc(s.nextTask.text) + (s.nextTask.due ? ' (' + esc(fmt(s.nextTask.due)) + ')' : '') : 'All tasks complete') + '</strong></span>' +
+    '<div class="bar"><span style="width:' + s.pct + '%"></span></div><span>' + s.done + ' of ' + s.total + ' tasks</span>' +
+    (s.overdue ? '<span class="chip chip-overdue">' + s.overdue + ' overdue</span>' : '') + '</div></header>' +
+    renderTabs(run) +
+    (ui.tab === 'pax' ? renderParticipants(run) : '<div class="layout single"><div>' + stages +
+    '<section class="card stage"><h2>Run notes</h2><textarea class="notes-area" data-runnotes' + (readOnly ? ' readonly' : '') + ' placeholder="Changes from Syu, venue contacts, anything the next person should know">' + esc(run.notes || '') + '</textarea>' +
+    '<div class="small muted" style="margin-top:8px">Last updated ' + esc(run.updatedAt ? new Date(run.updatedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '') + (run.updatedBy ? ' by ' + who(run.updatedBy) : '') + '</div></section>' +
+    renderEmails(run) +
+    '</div></div>');
+}
+
+function orderedTemplates() {
+  const ids = (state.settings && Array.isArray(state.settings.templateOrder)) ? state.settings.templateOrder : [];
+  const tasks = allTaskOptions().map(t => t.id);
+  const rank = t => { const i = ids.indexOf(t.id); if (i !== -1) return i; const k = tasks.indexOf(t.taskId); return 1000 + (k === -1 ? 999 : k); };
+  return (state.templates || []).slice().sort((a, b) => rank(a) - rank(b));
+}
+function moveTemplate(id, dir) {
+  const list = orderedTemplates().map(t => t.id);
+  const i = list.indexOf(id), j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  state.settings = Object.assign({}, state.settings, { templateOrder: list });
+  if (online) dbWrite('settings/email', 'set', clone(state.settings)); else save();
+  render();
+}
+/* ============================ Participants (Salesforce) ============================
+   Read through the viewer's Salesforce connector (mcp capability, tool soqlQuery).
+   The last result is saved on the run (run.pax) so everyone sees the same list. */
+const SF_SERVER = 'Salesforce';
+const NPSA_ACCOUNT_ID = '001DEMO000000000AA';   // demo account
+let mcpNs = null, paxBusy = false, paxError = null;
+async function getMcp() {
+  return null; // demo copy: no live Salesforce/Outlook
+  if (!(window.claude && typeof window.claude.use === 'function')) return null;
+  try { mcpNs = await window.claude.use('mcp'); } catch (e) { mcpNs = null; }
+  return mcpNs;
+}
+const sfId = v => /^[A-Za-z0-9]{15,18}$/.test(v || '') ? v : null;
+const sfDate = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : null;
+async function sfQuery(q) {
+  const mcp = await getMcp();
+  if (!mcp) { const e = new Error('unavailable'); e.code = 'unavailable_here'; throw e; }
+  const run1 = () => mcp.callTool(SF_SERVER, 'soqlQuery', { q });
+  let res;
+  try { res = await run1(); }
+  catch (e) {
+    if (e && e.retryable) { await new Promise(r => setTimeout(r, Math.max(e.retryAfterMs || 0, 600 + Math.random() * 900))); res = await run1(); }
+    else throw e;
+  }
+  let p = res && res.payload;
+  if (typeof p === 'string') { try { p = JSON.parse(p); } catch (e) {} }
+  if (!p || !Array.isArray(p.records)) { const e = new Error('Salesforce sent back something unexpected.'); e.code = 'bad_shape'; throw e; }
+  return p.records;
+}
+function paxErrorText(e) {
+  const c = e && e.code;
+  if (c === 'unavailable_here') return 'This is a demo copy with sample data, so it doesn\u2019t connect to Salesforce.';
+  if (c === 'server_not_connected') return 'Salesforce isn\u2019t connected to your Claude account. Add it in claude.ai Settings \u2192 Connectors, then try again.';
+  if (c === 'needs_reauth') return 'Your Salesforce connection has expired. Reconnect Salesforce in claude.ai Settings \u2192 Connectors, then try again.';
+  if (c === 'selection_required') return 'You have more than one Salesforce connection. Choose which one this tracker should use when Claude asks, then try again.';
+  if (c === 'not_in_manifest' || c === 'approval_required') return 'This tracker isn\u2019t allowed to use Salesforce for you yet. Allow it when Claude asks, or turn it on in this artifact\u2019s Permissions menu.';
+  if (c === 'blocked_by_policy') return 'Your organization\u2019s settings block this tracker from using Salesforce.';
+  if (c === 'server_unavailable' || c === 'rate_limited') return 'Salesforce didn\u2019t respond. Wait a minute and try again.';
+  if (c === 'no_event') return e.message;
+  if (c === 'tool_error') return 'Salesforce returned an error: ' + (e.message || 'unknown error') + '.';
+  return 'Couldn\u2019t load from Salesforce' + (e && e.message ? ': ' + e.message : '.');
+}
+async function refreshParticipants(run) {
+  if (paxBusy) return;
+  paxBusy = true; paxError = null; softRenderNow();
+  try {
+    let eventId = sfId(run.sfEventId);
+    if (!eventId) {
+      const start = sfDate(run.startDate);
+      if (!start) { const e = new Error('Add the program start date first, so the tracker can find the Salesforce Training Event.'); e.code = 'no_event'; throw e; }
+      const evs = await sfQuery("SELECT Id, Name FROM Training_Event__c WHERE Start_Date__c = " + start +
+        " AND (End_User_Company__c = '" + NPSA_ACCOUNT_ID + "' OR Name LIKE '%NPSA%' OR Name LIKE '%Northwind%') ORDER BY CreatedDate DESC LIMIT 2");
+      if (evs.length !== 1) {
+        const e = new Error(evs.length ? 'More than one NPSA Training Event starts on ' + fmt(start, true) + '. Paste the right Salesforce Training Event ID under Edit details.' : 'No NPSA Training Event in Salesforce starts on ' + fmt(start, true) + '. Check the start date, or paste the Salesforce Training Event ID under Edit details.');
+        e.code = 'no_event'; throw e;
+      }
+      eventId = sfId(evs[0].Id); run.sfEventId = eventId; run.sfEventName = evs[0].Name || '';
+    }
+    const recs = await sfQuery("SELECT Id, Full_Name__c, ATC_Email__c, Status__c, prework_task_status__c, Pre_work_received__c, Project_Title__c, LastModifiedDate FROM Associated_Training_Contacts__c WHERE Training_Event__c = '" + eventId + "' ORDER BY Full_Name__c");
+    const people = recs.map(r => ({
+      id: String(r.Id || ''),
+      name: new DOMParser().parseFromString(String(r.Full_Name__c || ''), 'text/html').body.textContent.trim(),
+      email: String(r.ATC_Email__c || ''),
+      status: String(r.Status__c || ''),
+      prework: String(r.prework_task_status__c || 'Not Started'),
+      received: !!r.Pre_work_received__c,
+      project: String(r.Project_Title__c || ''),
+      modified: String(r.LastModifiedDate || '').slice(0, 10)
+    }));
+    run.pax = { at: new Date().toISOString(), by: me || null, people };
+    persistRun(run, { sfEventId: eventId, sfEventName: run.sfEventName || '', pax: run.pax });
+    toast('Loaded ' + people.length + ' participant' + (people.length === 1 ? '' : 's') + ' from Salesforce');
+  } catch (e) { paxError = paxErrorText(e); }
+  paxBusy = false; softRenderNow();
+  return !paxError;
+}
+function softRenderNow() { const y = window.scrollY; render(); window.scrollTo(0, y); }
+function renderTabs(run) {
+  const n = run.pax && run.pax.people ? run.pax.people.filter(p => p.status !== 'Cancelled').length : null;
+  const tab = (id, label) => '<button type="button" class="tab' + ((ui.tab || 'list') === id ? ' active' : '') + '" data-action="tab" data-tab="' + id + '" role="tab" aria-selected="' + ((ui.tab || 'list') === id) + '">' + label + '</button>';
+  return '<div class="tabs no-print" role="tablist">' + tab('list', 'Checklist') + tab('pax', 'Participants' + (n !== null ? ' (' + n + ')' : '')) + '</div>';
+}
+function renderParticipants(run) {
+  const pax = run.pax, people = pax && Array.isArray(pax.people) ? pax.people.slice() : null;
+  const head = '<div class="stage-head"><h2>Participants</h2><div class="pax-tools">' +
+    (pax && pax.at ? '<span class="small muted">Updated ' + esc(new Date(pax.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })) + (pax.by ? ' by ' + who(pax.by) : '') + '</span>' : '') +
+    (readOnly ? '' : '<button type="button" class="btn" data-action="pax-refresh"' + (paxBusy ? ' disabled' : '') + '>' + (paxBusy ? 'Loading\u2026' : 'Refresh from Salesforce') + '</button>') + '</div></div>';
+  const intro = '<p class="small muted" style="margin:12px 0 0">Status and pre-work come straight from Salesforce' + (run.sfEventName ? ' (' + esc(run.sfEventName) + ')' : '') + '. The pre-work documents themselves stay in the Brightpath portal.</p>';
+  const err = paxError ? '<div class="banner" style="margin:14px 0 0">' + esc(paxError) + '</div>' : '';
+  if (!people) return '<section class="card stage pax">' + head + intro + err +
+    '<div class="empty" style="padding:36px 12px"><p class="muted">' + (paxBusy ? 'Loading participants from Salesforce\u2026' : 'No participant list loaded yet. Click \u201cRefresh from Salesforce\u201d to pull it in.') + '</p></div></section>';
+  const active = people.filter(p => p.status !== 'Cancelled'), cancelled = people.length - active.length;
+  const cnt = v => active.filter(p => p.prework === v).length;
+  const notStarted = active.filter(p => p.prework !== 'Complete' && p.prework !== 'In Progress').length;
+  const order = p => (p.status === 'Cancelled' ? 1 : 0);
+  people.sort((a, b) => order(a) - order(b) || a.name.localeCompare(b.name));
+  const pill = v => v === 'Complete' ? '<span class="chip chip-done">Complete</span>' : v === 'In Progress' ? '<span class="chip chip-soon">In Progress</span>' : '<span class="chip chip-overdue">Not Started</span>';
+  const rows = people.map(p => '<tr' + (p.status === 'Cancelled' ? ' class="cancelled"' : '') + '>' +
+    '<td><div class="p-name">' + esc(p.name || '(no name)') + '</div><div class="small muted">' + esc(p.email) + '</div></td>' +
+    '<td>' + esc(p.status || '\u2013') + '</td><td>' + pill(p.prework) + '</td><td>' + (p.received ? 'Yes' : 'No') + '</td>' +
+    '<td>' + (p.project ? esc(p.project) : '<span class="muted">\u2013</span>') + '</td>' +
+    '<td class="muted">' + (p.modified ? esc(fmt(p.modified)) : '') + '</td></tr>').join('');
+  const notDone = active.filter(p => p.prework !== 'Complete' && p.email).length;
+  return '<section class="card stage pax">' + head + intro + err +
+    '<div class="pax-summary"><span><strong>' + active.length + '</strong> attending</span>' +
+    '<span class="chip chip-done">' + cnt('Complete') + ' pre-work complete</span>' +
+    '<span class="chip chip-soon">' + cnt('In Progress') + ' in progress</span>' +
+    '<span class="chip chip-overdue">' + notStarted + ' not started</span>' +
+    (cancelled ? '<span class="chip">' + cancelled + ' cancelled</span>' : '') +
+    (notDone ? '<button type="button" class="linkish email no-print" data-action="pax-copy" style="margin-left:auto">Copy emails: pre-work not complete (' + notDone + ')</button>' : '') + '</div>' +
+    '<div class="table-wrap"><table class="pax-table"><thead><tr><th>Participant</th><th>Status</th><th>Pre-work</th><th>Received</th><th>Project</th><th>Updated</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
+}
+
+/* ============================ Outlook drafts (Microsoft 365) ============================
+   Creates a draft in the viewer's own Outlook Drafts. Never sends. Bcc = everyone
+   "Scheduled to Attend" on the run's Salesforce participant list. */
+const M365_SERVER = 'Microsoft 365';
+const draftState = {};
+const OUTLOOK_TAGS = { P: 'p', DIV: 'div', BR: 'br', A: 'a', B: 'b', STRONG: 'b', I: 'i', EM: 'i', UL: 'ul', OL: 'ol', LI: 'li', STRIKE: 'strike', H1: 'h1', H2: 'h2', H3: 'h3' };
+function outlookSafeHtml(html) {
+  const src = new DOMParser().parseFromString('<body>' + html + '</body>', 'text/html').body;
+  const out = document.createElement('div');
+  const walk = (node, parent) => Array.from(node.childNodes).forEach(n => {
+    if (n.nodeType === 3) { parent.appendChild(document.createTextNode(n.nodeValue)); return; }
+    if (n.nodeType !== 1) return;
+    const tag = n.tagName.toUpperCase();
+    let to = OUTLOOK_TAGS[tag];
+    if (tag === 'SPAN' && parseFloat(n.style.fontSize) >= 14) to = 'b';           // large text: keep it bold
+    if (tag === 'SPAN' && /bold|^[6-9]00$/.test(n.style.fontWeight || '')) to = 'b';
+    if (!to) { walk(n, parent); return; }                                          // u, span, mark, font: keep the text
+    const el = document.createElement(to);
+    if (to === 'a') { const h = (n.getAttribute('href') || '').trim(); if (/^(https?:|mailto:)/i.test(h)) el.setAttribute('href', h); else { walk(n, parent); return; } }
+    walk(n, el); parent.appendChild(el);
+  });
+  walk(src, out);
+  return out.innerHTML;
+}
+function draftErrorText(e) {
+  const c = e && e.code;
+  if (c === 'unavailable_here') return 'Outlook drafts can only be created when this tracker is open in Claude.';
+  if (c === 'server_not_connected') return 'Microsoft 365 isn\u2019t connected to your Claude account. Add it in claude.ai Settings \u2192 Connectors, then try again.';
+  if (c === 'needs_reauth') return 'Your Microsoft 365 connection has expired. Reconnect it in claude.ai Settings \u2192 Connectors, then try again.';
+  if (c === 'selection_required') return 'You have more than one Microsoft 365 connection. Choose which one this tracker should use when Claude asks, then try again.';
+  if (c === 'not_in_manifest' || c === 'approval_required') return 'This tracker isn\u2019t allowed to create Outlook drafts for you yet. Allow it when Claude asks, or turn it on in this artifact\u2019s Permissions menu.';
+  if (c === 'blocked_by_policy') return 'Your organization\u2019s settings block this tracker from creating Outlook drafts.';
+  if (c === 'tool_error') return 'Outlook didn\u2019t accept the draft: ' + (e.message || 'unknown error') + '.';
+  return 'The draft may or may not have been created. Check your Outlook Drafts before trying again.';
+}
+async function createDraft(run, tplId) {
+  const ds = draftState[tplId] || (draftState[tplId] = {});
+  if (ds.busy) return;
+  const tpl = (state.templates || []).find(t => t.id === tplId); if (!tpl) return;
+  const f = fillTemplate(tpl, run);
+  if (f.missing.length) { Object.assign(ds, { err: 'Fill in the missing details first: ' + f.missing.join(', ') + '.', msg: null, link: null }); softRenderNow(); return; }
+  Object.assign(ds, { busy: true, err: null, msg: null, link: null }); softRenderNow();
+  let note = '';
+  const fresh = await refreshParticipants(run);
+  if (!fresh) {
+    if (run.pax && Array.isArray(run.pax.people)) note = ' Salesforce couldn\u2019t be reached, so this used the participant list saved ' + new Date(run.pax.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) + '.';
+    else { Object.assign(ds, { busy: false, err: paxError || 'Couldn\u2019t load the participant list from Salesforce.' }); softRenderNow(); return; }
+  }
+  const emails = [...new Set(run.pax.people.filter(p => p.status === 'Scheduled to Attend' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email)).map(p => p.email.trim()))];
+  if (!emails.length) { Object.assign(ds, { busy: false, err: 'No one on the Salesforce list is \u201cScheduled to Attend\u201d, so there\u2019s no one to Bcc.' }); softRenderNow(); return; }
+  if (emails.length > 50) { Object.assign(ds, { busy: false, err: 'Outlook drafts allow up to 50 recipients, and this run has ' + emails.length + '. Use Copy email instead.' }); softRenderNow(); return; }
+  try {
+    const mcp = await getMcp();
+    if (!mcp) { const e = new Error('unavailable'); e.code = 'unavailable_here'; throw e; }
+    const res = await mcp.callTool(M365_SERVER, 'outlook_create_draft', { subject: f.subject || tpl.name, body: outlookSafeHtml(f.html), bodyType: 'html', bcc: emails });
+    const pl = res && res.payload;
+    const link = typeof pl === 'string' ? ((pl.match(/webLink:\s*(https:\/\/\S+)/) || [])[1] || null) : (pl && typeof pl.webLink === 'string' && /^https:\/\//.test(pl.webLink) ? pl.webLink : null);
+    Object.assign(ds, { busy: false, link, msg: 'Draft saved in your Outlook Drafts with ' + emails.length + ' participant' + (emails.length === 1 ? '' : 's') + ' in Bcc. Review it and send from Outlook.' + note });
+  } catch (e) { Object.assign(ds, { busy: false, err: draftErrorText(e) }); }
+  softRenderNow();
+}
+
+function renderEmails(run) {
+  const tasks = stagesFor(run).flatMap(st => st.items);
+  const tpls = orderedTemplates();
+  const blocks = tpls.map(tpl => {
+    const f = fillTemplate(tpl, run);
+    const task = tpl.taskId ? tasks.find(i => i.id === tpl.taskId) : null;
+    return '<div class="email-block" id="email-' + esc(tpl.id) + '">' +
+      '<div class="email-title"><div><h3>' + esc(tpl.name) + '</h3>' + (tpl.taskId ? '<div class="small muted">' + esc(taskLabel(tpl.taskId)) + '</div>' : '') + '</div>' +
+      (task && task.st.done ? '<span class="chip chip-done">Sent ' + esc(task.st.doneAt ? fmt(task.st.doneAt) : '') + '</span>' : (task && task.due ? chip(task) : '')) + '</div>' +
+      (f.missing.length ? '<div class="missing-bar"><span>Missing: ' + esc(f.missing.join(', ')) + '. Highlighted below.</span><button type="button" class="btn" data-action="edit">Fill in details</button></div>' : '') +
+      '<div class="subject-row"><span class="k">Subject</span><span class="v">' + esc(f.subject) + '</span><button type="button" class="btn btn-quiet" data-action="copy-subject" data-tpl="' + esc(tpl.id) + '">Copy subject</button></div>' +
+      '<div class="email-body">' + f.html + '</div>' +
+      '<div class="sheet-actions"><button type="button" class="btn btn-primary" data-action="copy-email" data-tpl="' + esc(tpl.id) + '">Copy email</button>' +
+      '<button type="button" class="btn" data-action="copy-subject" data-tpl="' + esc(tpl.id) + '">Copy subject</button>' +
+      (tpl.subject && !readOnly ? '<button type="button" class="btn" data-action="make-draft" data-tpl="' + esc(tpl.id) + '"' + ((draftState[tpl.id] || {}).busy ? ' disabled' : '') + '>' +
+        ((draftState[tpl.id] || {}).busy ? 'Creating draft\u2026' : 'Create Outlook draft' + (bccCount(run) ? ' (' + bccCount(run) + ' Bcc)' : '')) + '</button>' : '') +
+      (task && !task.st.done ? '<button type="button" class="btn" data-action="mark-sent" data-id="' + esc(task.id) + '">Mark as sent</button>' : '') +
+      '</div>' + draftResult(tpl.id) + '</div>';
+  }).join('');
+  return '<section class="card stage" id="emails"><div class="stage-head"><h2>Emails</h2><button type="button" class="linkish no-print" data-action="templates">Manage templates</button></div>' +
+    (blocks || '<p class="muted">No email templates yet. Add one under Manage templates.</p>') +
+    '<p class="small muted no-print" style="margin:4px 0 0">Copy email keeps all the formatting when you paste into Outlook. Create Outlook draft puts everyone \u201cScheduled to Attend\u201d in Bcc and keeps bold, bullets and links, but not underlines or text sizes, which Outlook\u2019s connector doesn\u2019t allow.</p></section>';
+}
+function bccCount(run) { return run.pax && Array.isArray(run.pax.people) ? run.pax.people.filter(p => p.status === 'Scheduled to Attend' && p.email).length : 0; }
+function draftResult(id) {
+  const d = draftState[id]; if (!d) return '';
+  if (d.err) return '<div class="banner" style="margin:12px 0 0">' + esc(d.err) + '</div>';
+  if (d.msg) return '<div class="draft-ok">' + esc(d.msg) + (d.link ? ' <a href="' + esc(d.link) + '" target="_blank" rel="noopener">Open draft in Outlook</a>' : '') + '</div>';
+  return '';
+}
+
+function previewRunForEditor() {
+  const id = ui.tplPreviewRun;
+  return (id && getRun(id)) || SAMPLE_RUN();
+}
+function renderTplPreview() {
+  const box = document.getElementById('tpl-preview-body'); if (!box) return;
+  const ed = document.getElementById('tpl-body');
+  const tpl = { subject: (document.getElementById('tpl-subject') || {}).value || '', html: ed ? ed.innerHTML : '' };
+  const f = fillTemplate(tpl, previewRunForEditor());
+  box.innerHTML = '<div class="subject-row" style="grid-template-columns:auto minmax(0,1fr)"><span class="k">Subject</span><span class="v">' + esc(f.subject) + '</span></div><div class="email-body" style="max-height:none">' + f.html + '</div>';
+}
+
+const AUTO_RULES = {
+  preworkDeadline: '5 working days (Mon to Fri) before the program starts',
+  dietaryDeadline: '2 weeks before the program starts',
+  declarationDeadline: '2 weeks before the program starts',
+  qaDate: 'the Wednesday of the week before the program',
+  qaTime: 'always 6:00pm to 6:30pm',
+  timing: 'always 9:00am to 6:00pm',
+  programmeDates: 'from the start and end dates',
+  classDates: 'each program day, from the start and end dates',
+  dayCount: 'counted from the start and end dates'
+};
+function rteBtn(action, label, title) {
+  return '<button type="button" class="rte-btn" data-action="' + action + '" title="' + title + '" aria-label="' + title + '">' + label + '</button>';
+}
+const RTE_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28];
+let rteRange = null;
+function rteEditor() { return document.getElementById('tpl-body'); }
+function rteSelectionInside() {
+  const ed = rteEditor(), sel = window.getSelection();
+  return ed && sel && sel.rangeCount && ed.contains(sel.getRangeAt(0).commonAncestorContainer) ? sel : null;
+}
+function rteCurrentPt() {
+  const sel = rteSelectionInside(); if (!sel) return 11;
+  const r = sel.getRangeAt(0); let n = r.startContainer;
+  if (n.nodeType === 1 && n.childNodes[r.startOffset]) n = n.childNodes[r.startOffset];
+  while (n && n.nodeType === 1 && n.firstChild && n.tagName !== 'BR') n = n.firstChild;
+  if (n && n.nodeType === 3) n = n.parentElement;
+  return n && n.nodeType === 1 ? Math.round(parseFloat(getComputedStyle(n).fontSize) * 0.75) : 11;
+}
+function rteApplySize(pt) {
+  const ed = rteEditor();
+  document.execCommand('styleWithCSS', false, false);
+  document.execCommand('fontSize', false, '7');
+  const made = [];
+  ed.querySelectorAll('font[size="7"]').forEach(f => {
+    const sp = document.createElement('span'); sp.style.fontSize = pt + 'pt';
+    while (f.firstChild) sp.appendChild(f.firstChild);
+    sp.querySelectorAll('[style]').forEach(x => { x.style.fontSize = ''; if (!x.getAttribute('style')) x.removeAttribute('style'); });
+    f.replaceWith(sp); made.push(sp);
+  });
+  if (made.length) { const r = document.createRange(); r.setStartBefore(made[0]); r.setEndAfter(made[made.length - 1]); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+}
+function rteUpdateSize() { const el = document.getElementById('rte-size'); if (el && rteSelectionInside()) el.textContent = rteCurrentPt() + 'pt'; }
+document.addEventListener('selectionchange', rteUpdateSize);
+document.addEventListener('mousedown', e => { if (e.target.closest && e.target.closest('.rte-btn, .ph-chip')) e.preventDefault(); });
+document.addEventListener('paste', e => {
+  const ed = rteEditor(); if (!ed || !ed.contains(e.target)) return;
+  const html = e.clipboardData && e.clipboardData.getData('text/html');
+  const text = e.clipboardData && e.clipboardData.getData('text/plain');
+  e.preventDefault();
+  if (html) document.execCommand('insertHTML', false, sanitizeRich(html));
+  else if (text) document.execCommand('insertHTML', false, markupToHtml(text));
+  renderTplPreview();
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'rte-link-pick' && e.target.value) document.getElementById('rte-link-url').value = e.target.value;
+  if (e.target.id === 'f-qaZoom') document.querySelectorAll('.zoom-other').forEach(el => { el.hidden = e.target.value !== 'other'; });
+});
+document.addEventListener('keydown', e => { if (e.target.id === 'rte-link-url' && e.key === 'Enter') { e.preventDefault(); const b = document.querySelector('[data-action="fmt-link-apply"]'); if (b) b.click(); } });
+
+function renderTemplates() {
+  document.title = 'Email templates \u00b7 NPSA';
+  const tpls = orderedTemplates();
+  const back = '<div class="topbar no-print"><button type="button" class="back" data-action="' + (ui.editTpl ? 'tpl-cancel' : 'home') + '">\u2190 ' + (ui.editTpl ? 'All templates' : 'All runs') + '</button></div>';
+  if (ui.editTpl) {
+    const t = ui.editTpl === 'new' ? { name: '', subject: '', body: '', taskId: '' } : tpls.find(x => x.id === ui.editTpl) || {};
+    const opts = '<option value="">Not linked to a task</option>' + allTaskOptions().map(o => '<option value="' + esc(o.id) + '"' + (o.id === t.taskId ? ' selected' : '') + '>' + esc(o.label) + '</option>').join('');
+    const runOpts = '<option value="">Sample details</option>' + state.runs.map(r => '<option value="' + esc(r.id) + '"' + (r.id === ui.tplPreviewRun ? ' selected' : '') + '>' + esc(r.name) + '</option>').join('');
+    app.innerHTML = back + '<div class="card"><h1>' + (ui.editTpl === 'new' ? 'New email template' : 'Edit email template') + '</h1>' +
+      '<div class="tpl-editor" style="margin-top:20px"><div>' +
+      '<div class="field"><label for="tpl-name">Template name</label><input id="tpl-name" value="' + esc(t.name) + '"></div>' +
+      '<div class="field" style="margin-top:16px"><label for="tpl-task">Show \u201cPreview email\u201d on this task</label><select id="tpl-task">' + opts + '</select></div>' +
+      '<div class="field" style="margin-top:16px"><label for="tpl-subject">Subject</label><input id="tpl-subject" data-tplfield value="' + esc(t.subject) + '"></div>' +
+      '<div class="field" style="margin-top:16px"><label id="tpl-body-label">Email body</label>' +
+      '<div class="rte-bar" role="toolbar" aria-label="Text formatting">' +
+      rteBtn('fmt-bold', '<b>B</b>', 'Bold') + rteBtn('fmt-italic', '<i>I</i>', 'Italic') + rteBtn('fmt-underline', '<u>U</u>', 'Underline') +
+      '<span class="rte-sep"></span>' + rteBtn('fmt-smaller', 'A\u2212', 'Make selected text smaller') +
+      '<span class="rte-size" id="rte-size" title="Size of the text at your cursor">11pt</span>' + rteBtn('fmt-bigger', 'A+', 'Make selected text bigger') +
+      '<span class="rte-sep"></span>' + rteBtn('fmt-list', '\u2022 List', 'Bullet list') + rteBtn('fmt-link', 'Link', 'Turn selected text into a link') +
+      rteBtn('fmt-clear', 'Clear formatting', 'Remove formatting from selected text') + '</div>' +
+      '<div class="rte-link" id="rte-link" hidden><input id="rte-link-url" placeholder="Paste a web address" aria-label="Link address">' +
+      '<select id="rte-link-pick" aria-label="Or use a form link"><option value="">or use a form link\u2026</option><option value="{{dietaryFormLink}}">Dietary form link</option><option value="{{declarationFormLink}}">Declaration form link</option></select>' +
+      '<button type="button" class="btn" data-action="fmt-link-apply">Add link</button><button type="button" class="btn btn-quiet" data-action="fmt-link-cancel">Cancel</button></div>' +
+      '<div id="tpl-body" class="rte" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="tpl-body-label" data-tplfield>' + templateHtml(t) + '</div>' +
+      '<div class="help">Select words, then use the buttons to make them bold, underlined, bigger or smaller. Pasting a formatted email from Outlook keeps its formatting. Click a detail below to insert it at your cursor.</div>' +
+      '<div class="ph-chips">' + PLACEHOLDERS.map(([k, label]) => '<button type="button" class="ph-chip' + (AUTO_RULES[k] ? ' auto' : '') + '" data-action="insert-ph" data-key="' + k + '"' +
+        (AUTO_RULES[k] ? ' title="Calculated automatically: ' + esc(AUTO_RULES[k]) + '"' : '') + '>' + esc(label) + (AUTO_RULES[k] ? ' <span class="auto-tag">auto</span>' : '') + '</button>').join('') + '</div>' +
+      '<div class="help">Details marked <span class="auto-tag">auto</span> are worked out from the start date. Hover over one to see the rule.</div></div>' +
+      '<div class="form-actions"><button type="button" class="btn btn-primary" data-action="tpl-save">Save template</button><button type="button" class="btn" data-action="tpl-cancel">Cancel</button>' +
+      (t.builtIn ? '<button type="button" class="btn btn-quiet" data-action="tpl-reset" data-id="' + esc(t.id) + '">Restore original wording</button>' : '') + '</div>' +
+      '</div><div class="tpl-preview"><div class="field"><label for="tpl-run">Preview with</label><select id="tpl-run">' + runOpts + '</select></div><div id="tpl-preview-body" style="margin-top:12px"></div></div></div></div>';
+    renderTplPreview();
+    return;
+  }
+  app.innerHTML = storageBanner() + back +
+    '<div class="home-head"><div><h1>Email templates</h1><p class="muted">Details in {{curly brackets}} are filled in from each run when you preview the email. Emails appear on each run in this order; use the arrows to change it.</p></div>' +
+    '<div class="actions no-print"><button type="button" class="btn btn-primary" data-action="tpl-new">New template</button></div></div>' +
+    '<div class="runs">' + (tpls.length ? tpls.map((t, i) => '<div class="card run-row" style="grid-template-columns:minmax(0,1fr) auto;cursor:default">' +
+      '<div><div class="name">' + esc(t.name || 'Untitled template') + '</div><div class="small muted">' + esc(t.taskId ? taskLabel(t.taskId) : 'Not linked to a task') + '</div></div>' +
+      '<div class="actions">' +
+      '<button type="button" class="btn btn-quiet move-btn" data-action="tpl-up" data-id="' + esc(t.id) + '" aria-label="Move ' + esc(t.name) + ' up" title="Move up"' + (i === 0 ? ' disabled' : '') + '>\u2191</button>' +
+      '<button type="button" class="btn btn-quiet move-btn" data-action="tpl-down" data-id="' + esc(t.id) + '" aria-label="Move ' + esc(t.name) + ' down" title="Move down"' + (i === tpls.length - 1 ? ' disabled' : '') + '>\u2193</button>' +
+      '<button type="button" class="btn" data-action="tpl-edit" data-id="' + esc(t.id) + '">Edit</button>' +
+      (t.builtIn ? '' : (ui.confirmTpl === t.id
+        ? '<button type="button" class="btn btn-danger" data-action="tpl-delete-yes" data-id="' + esc(t.id) + '">Confirm delete</button>'
+        : '<button type="button" class="btn btn-danger" data-action="tpl-delete" data-id="' + esc(t.id) + '">Delete</button>')) +
+      '</div></div>').join('') : '<div class="card empty"><h2>No templates yet</h2></div>') + '</div>';
+}
+
+let lastTplField = null;
+app.addEventListener('focusin', e => { if (e.target.dataset && 'tplfield' in e.target.dataset) lastTplField = e.target; });
+app.addEventListener('input', e => { if (e.target.dataset && 'tplfield' in e.target.dataset) renderTplPreview(); });
+app.addEventListener('change', e => { if (e.target.id === 'tpl-run') { ui.tplPreviewRun = e.target.value || null; renderTplPreview(); } });
+
+/* ============================ Standalone export ============================ */
+function standaloneHTML(runs, openId) {
+  const clone = document.documentElement.cloneNode(true);
+  clone.querySelector('#app').innerHTML = '';
+  const seed = clone.querySelector('#seed');
+  seed.textContent = JSON.stringify({ runs, openId, templates: state.templates }).replace(/</g, '\\u003c');
+  return '<!DOCTYPE html>\n' + clone.outerHTML;
+}
+
+/* ============================ Events ============================ */
+let currentRun = () => route.view === 'run' ? getRun(route.id) : null;
+let noteTimer, notePatch = {};
+
+app.addEventListener('click', e => {
+  if (e.target.classList && e.target.classList.contains('overlay')) { ui.preview = null; render(); return; }
+  const b = e.target.closest('[data-action]'); if (!b) return;
+  const a = b.dataset.action; const run = currentRun();
+  if (a === 'home') { go('home'); return; }
+  if (a === 'new') { go('new'); return; }
+  if (a === 'open') { go('run', b.dataset.id); return; }
+  if (a === 'save-run') { saveRunForm(); return; }
+  if (a === 'cancel-edit') { if (route.view === 'run') { ui.editing = false; render(); } else go('home'); return; }
+  if (a === 'backup') { download('NPSA-runs-backup-' + today() + '.json', JSON.stringify({ app: 'npsa-run-tracker', exported: new Date().toISOString(), runs: state.runs, templates: state.templates }, null, 2), 'application/json'); return; }
+  if (a === 'restore') { document.getElementById('restore-input').click(); return; }
+  if (a === 'templates') { go('templates'); return; }
+  if (a && a.startsWith('fmt-')) {
+    const ed = rteEditor(); if (!ed) return;
+    const sel = rteSelectionInside();
+    if (a === 'fmt-link-cancel') { document.getElementById('rte-link').hidden = true; rteRange = null; return; }
+    if (a === 'fmt-link-apply') {
+      const url = document.getElementById('rte-link-url').value.trim();
+      if (!/^(https?:\/\/|mailto:|\{\{)/i.test(url)) { toast('Use a full web address starting with https://, or pick a form link.'); return; }
+      ed.focus(); const s2 = window.getSelection(); if (rteRange) { s2.removeAllRanges(); s2.addRange(rteRange); }
+      document.execCommand('createLink', false, url);
+      document.getElementById('rte-link').hidden = true; rteRange = null; renderTplPreview(); return;
+    }
+    if (!sel) { ed.focus(); toast('Click in the email body first.'); return; }
+    const collapsed = sel.getRangeAt(0).collapsed;
+    if (a === 'fmt-bold') document.execCommand('bold');
+    if (a === 'fmt-italic') document.execCommand('italic');
+    if (a === 'fmt-underline') document.execCommand('underline');
+    if (a === 'fmt-list') document.execCommand('insertUnorderedList');
+    if (a === 'fmt-clear') { document.execCommand('removeFormat'); document.execCommand('unlink'); }
+    if (a === 'fmt-bigger' || a === 'fmt-smaller') {
+      if (collapsed) { toast('Select the words you want to resize first.'); return; }
+      const cur = rteCurrentPt();
+      const next = a === 'fmt-bigger' ? RTE_SIZES.find(n => n > cur) : RTE_SIZES.slice().reverse().find(n => n < cur);
+      if (!next) { toast(a === 'fmt-bigger' ? 'That\u2019s the largest size.' : 'That\u2019s the smallest size.'); return; }
+      rteApplySize(next);
+    }
+    if (a === 'fmt-link') {
+      if (collapsed) { toast('Select the words you want to turn into a link first.'); return; }
+      rteRange = sel.getRangeAt(0).cloneRange();
+      const box = document.getElementById('rte-link'); box.hidden = false;
+      const inp = document.getElementById('rte-link-url'); inp.value = ''; document.getElementById('rte-link-pick').value = ''; inp.focus();
+      return;
+    }
+    rteUpdateSize(); renderTplPreview(); return;
+  }
+  if (a === 'tpl-up' || a === 'tpl-down') { moveTemplate(b.dataset.id, a === 'tpl-up' ? -1 : 1); return; }
+  if (a === 'tpl-new') { ui.editTpl = 'new'; render(); window.scrollTo(0, 0); return; }
+  if (a === 'tpl-edit') { ui.editTpl = b.dataset.id; render(); window.scrollTo(0, 0); return; }
+  if (a === 'tpl-cancel') { ui.editTpl = null; render(); return; }
+  if (a === 'tpl-delete') { ui.confirmTpl = b.dataset.id; render(); return; }
+  if (a === 'tpl-delete-yes') { removeTemplate(b.dataset.id); ui.confirmTpl = null; render(); toast('Template deleted'); return; }
+  if (a === 'tpl-reset') {
+    const d = DEFAULT_TEMPLATES.find(x => x.id === b.dataset.id); if (!d) return;
+    document.getElementById('tpl-subject').value = d.subject; rteEditor().innerHTML = templateHtml(d);
+    document.getElementById('tpl-name').value = d.name;
+    renderTplPreview(); toast('Original wording restored. Save to keep it.'); return;
+  }
+  if (a === 'insert-ph') {
+    const el = lastTplField || rteEditor(); if (!el) return;
+    const ins = '{{' + b.dataset.key + '}}';
+    if (el.isContentEditable) {
+      if (!rteSelectionInside()) { el.focus(); const r = document.createRange(); r.selectNodeContents(el); r.collapse(false); const s3 = window.getSelection(); s3.removeAllRanges(); s3.addRange(r); }
+      document.execCommand('insertText', false, ins); renderTplPreview(); return;
+    }
+    const st = el.selectionStart ?? el.value.length, en = el.selectionEnd ?? el.value.length;
+    el.value = el.value.slice(0, st) + ins + el.value.slice(en); el.focus(); el.setSelectionRange(st + ins.length, st + ins.length);
+    renderTplPreview(); return;
+  }
+  if (a === 'tpl-save') {
+    const name = document.getElementById('tpl-name').value.trim();
+    if (!name) { toast('Give the template a name.'); document.getElementById('tpl-name').focus(); return; }
+    const data = { name, taskId: document.getElementById('tpl-task').value, subject: document.getElementById('tpl-subject').value, html: sanitizeRich(rteEditor().innerHTML), body: '', updatedAt: new Date().toISOString() };
+    { const tmp = document.createElement('div'); tmp.innerHTML = data.html; data.body = htmlToText(tmp); }
+    let tpl;
+    if (ui.editTpl === 'new') { tpl = Object.assign({ id: 'tpl-' + Date.now().toString(36) }, data); state.templates.push(tpl); }
+    else { tpl = state.templates.find(t => t.id === ui.editTpl); Object.assign(tpl, data); }
+    persistTemplate(tpl); ui.editTpl = null; render(); toast('Template saved'); return;
+  }
+  if (!run) return;
+  if (a === 'preview') {
+    const el = document.getElementById('email-' + b.dataset.tpl);
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+    return;
+  }
+  if (a === 'make-draft') { createDraft(run, b.dataset.tpl); return; }
+  if (a === 'copy-email' || a === 'copy-subject') {
+    const tpl = state.templates.find(t => t.id === b.dataset.tpl); if (!tpl) return;
+    const f = fillTemplate(tpl, run);
+    (a === 'copy-email' ? copyRich(f.html, f.text) : copyPlain(f.subject)).then(ok => toast(ok
+      ? (a === 'copy-email' ? 'Email copied. Paste it into Outlook.' + (f.missing.length ? ' Some details are still missing.' : '') : 'Subject copied')
+      : 'Copying is blocked here. Open the file in Chrome or Edge, or select the text and copy it.'));
+    return;
+  }
+  if (a === 'mark-sent') {
+    const st = { done: true, doneAt: today(), doneBy: me || null };
+    run.tasks = run.tasks || {}; run.tasks[b.dataset.id] = Object.assign(run.tasks[b.dataset.id] || {}, st);
+    persistRun(run, { tasks: { [b.dataset.id]: st } }); const y = window.scrollY; render(); window.scrollTo(0, y); toast('Marked as sent'); return;
+  }
+  if (a === 'edit') { ui.preview = null; ui.editing = true; render(); window.scrollTo(0, 0); }
+  if (a === 'tab') { ui.tab = b.dataset.tab; paxError = null; softRenderNow(); if (ui.tab === 'pax' && !run.pax && !readOnly) refreshParticipants(run); return; }
+  if (a === 'pax-refresh') { refreshParticipants(run); return; }
+  if (a === 'pax-copy') {
+    const list = ((run.pax && run.pax.people) || []).filter(p => p.status !== 'Cancelled' && p.prework !== 'Complete' && p.email).map(p => p.email).join('; ');
+    copyPlain(list).then(ok => toast(ok ? 'Emails copied. Paste them into the To or Bcc line.' : 'Copying is blocked here. Select the emails in the table instead.'));
+    return;
+  }
+  if (a === 'print') { try { window.print(); } catch (err) { toast('Printing is blocked here. Open the file in Chrome or Edge to print.'); } }
+  if (a === 'export-run') download('NPSA-' + slug(run.name) + '.html', standaloneHTML([run], run.id), 'text/html');
+  if (a === 'delete') { ui.confirmDelete = true; render(); try { window.scrollTo(0, 0); } catch (e) {} }
+  if (a === 'delete-no') { ui.confirmDelete = false; render(); }
+  if (a === 'delete-yes') { const name = run.name; removeRun(run.id); go('home'); toast('Deleted ' + name); }
+  if (a === 'goto') { const el = document.getElementById('stage-' + b.dataset.stage); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  if (a === 'note') { ui.openNotes[b.dataset.id] = true; render(); const el = app.querySelector('[data-note="' + CSS.escape(b.dataset.id) + '"]'); if (el) el.focus(); }
+  if (a === 'add-task') { addTask(b.dataset.stage); return; }
+  if (a === 'remove-task') {
+    const stage = b.dataset.stage, cid = b.dataset.id;
+    run.custom = run.custom || {}; run.custom[stage] = run.custom[stage] || {}; run.custom[stage][cid] = null;
+    if (run.tasks) run.tasks[cid] = null;
+    persistRun(run, { custom: { [stage]: { [cid]: null } }, tasks: { [cid]: null } }); render();
+  }
+});
+
+app.addEventListener('change', e => {
+  if (e.target.dataset.action === 'hide-done') { setHideDone(e.target.checked); const y = window.scrollY; render(); window.scrollTo(0, y); return; }
+  const id = e.target.dataset.task; if (!id) return;
+  const run = currentRun(); if (!run) return;
+  run.tasks = run.tasks || {};
+  const t = run.tasks[id] || {};
+  t.done = e.target.checked; t.doneAt = t.done ? today() : null; t.doneBy = t.done ? (me || null) : null;
+  run.tasks[id] = t; persistRun(run, { tasks: { [id]: { done: t.done, doneAt: t.doneAt, doneBy: t.doneBy } } });
+  const y = window.scrollY; render(); window.scrollTo(0, y);
+});
+
+app.addEventListener('input', e => {
+  const run = currentRun(); if (!run) return;
+  if (readOnly) return;
+  if (e.target.dataset.note) {
+    const id = e.target.dataset.note;
+    run.tasks = run.tasks || {};
+    const t = run.tasks[id] || {}; t.note = e.target.value; run.tasks[id] = t;
+    notePatch.tasks = notePatch.tasks || {}; notePatch.tasks[id] = { note: t.note };
+  } else if ('runnotes' in e.target.dataset) { run.notes = e.target.value; notePatch.notes = run.notes; }
+  else return;
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(() => { const p = notePatch; notePatch = {}; persistRun(run, p); }, 600);
+});
+
+function saveRunForm() {
+  const box = document.getElementById('run-form'); if (!box) return;
+  const data = {};
+  box.querySelectorAll('input[name], textarea[name], select[name]').forEach(i => { data[i.name] = i.value.trim(); });
+  if (!data.name) { toast('Add a run name to continue.'); box.querySelector('[name=name]').focus(); return; }
+  if (!data.startDate) { toast('Add the program start date to continue.'); box.querySelector('[name=startDate]').focus(); return; }
+  if (data.endDate && data.endDate < data.startDate) { toast('The end date is before the start date. Check the program dates.'); return; }
+  let run = currentRun();
+  if (run && ui.editing) { Object.assign(run, data); persistRun(run, data); }
+  else { run = Object.assign({ id: uid(), tasks: {}, custom: {}, notes: '', createdAt: new Date().toISOString(), createdBy: me || null }, data); state.runs.push(run); persistRun(run); }
+  go('run', run.id); toast('Saved');
+}
+function addTask(stage) {
+  const run = currentRun(); const box = app.querySelector('[data-add="' + stage + '"]'); if (!run || !box) return;
+  const text = box.querySelector('[name=text]').value.trim(); if (!text) return;
+  const dueEl = box.querySelector('[name=due]');
+  const cid = 'c-' + Date.now().toString(36), item = { text, at: Date.now() };
+  if (dueEl && dueEl.value) item.due = dueEl.value;
+  run.custom = run.custom || {}; run.custom[stage] = run.custom[stage] || {}; run.custom[stage][cid] = item;
+  persistRun(run, { custom: { [stage]: { [cid]: item } } }); const y = window.scrollY; render(); window.scrollTo(0, y);
+  const again = app.querySelector('[data-add="' + stage + '"] [name=text]'); if (again) again.focus();
+}
+app.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && ui.preview) { ui.preview = null; render(); return; }
+  if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
+  if (e.target.closest('#run-form')) { e.preventDefault(); saveRunForm(); }
+  const add = e.target.closest('[data-add]'); if (add) { e.preventDefault(); addTask(add.dataset.add); }
+});
+
+document.getElementById('restore-input').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      let data;
+      if (/\.html?$/i.test(file.name)) {
+        const doc = new DOMParser().parseFromString(reader.result, 'text/html');
+        data = JSON.parse(doc.getElementById('seed').textContent);
+      } else { data = JSON.parse(reader.result); }
+      const runs = data && data.runs;
+      if (!Array.isArray(runs)) throw new Error();
+      mergeTemplates(data.templates);
+      const n = mergeRuns(runs);
+      toast(n ? n + ' run' + (n === 1 ? '' : 's') + ' imported or updated.' : 'Nothing new to import. Your copies are already up to date.');
+      render();
+    } catch (err) { toast('That file isn’t a NPSA tracker backup. Choose a .json backup or a run file saved from this tracker.'); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+document.getElementById('restore-input').setAttribute('accept', '.json,.html,application/json,text/html');
+
+window.addEventListener('hashchange', () => {
+  const r = routeFromHash(location.hash);
+  if (r.view !== route.view || r.id !== route.id) { route = r; ui = { editing: false, openNotes: {}, confirmDelete: false, preview: null, editTpl: null }; render(); }
+});
+
+/* ============================ Start ============================ */
+load();
+try { route = routeFromHash(location.hash); } catch (e) {}
+try {
+  const seed = JSON.parse(document.getElementById('seed').textContent);
+  if (seed && Array.isArray(seed.runs) && !connecting) {
+    mergeRuns(seed.runs);
+    mergeTemplates(seed.templates);
+    if (seed.zoom) state.zoom = seed.zoom;
+    if (seed.settings) state.settings = Object.assign({}, seed.settings, state.settings || {});
+    if (seed.openId && !location.hash) route = { view: 'run', id: seed.openId };
+  }
+} catch (e) {}
+render();
+connect();
+</script>
+</body>
+</html>
