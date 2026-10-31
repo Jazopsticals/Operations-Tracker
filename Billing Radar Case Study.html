@@ -1,0 +1,1102 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Billing Radar Case Study</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+
+  :root {
+    --shell-bg: #0d0e10;
+    --shell-bar: #16181b;
+    --shell-ink: #eef0f2;
+    --shell-ink-2: #9aa1a8;
+    --shell-line: #2a2e33;
+    --shell-accent: #5fb9a8;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--shell-bg);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .shell-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--shell-bar);
+    border-bottom: 1px solid var(--shell-line);
+    padding: 10px max(16px, env(safe-area-inset-left,0px)) 10px max(16px, env(safe-area-inset-right,0px));
+    padding-top: max(10px, env(safe-area-inset-top, 0px));
+  }
+  .shell-tab {
+    font: 600 13px/1 "IBM Plex Sans", sans-serif;
+    color: var(--shell-ink-2);
+    background: transparent;
+    border: 1px solid var(--shell-line);
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+  }
+  .shell-tab:hover { color: var(--shell-ink); border-color: var(--shell-accent); }
+  .shell-tab[aria-selected="true"] {
+    background: var(--shell-accent);
+    border-color: var(--shell-accent);
+    color: #06201a;
+  }
+  .shell-label {
+    margin-left: auto;
+    font: 500 11px/1 "IBM Plex Mono", monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--shell-ink-2);
+  }
+  .radar-scope, .map-scope { min-height: 100vh; }
+  .radar-scope[hidden], .map-scope[hidden] { display: none !important; }
+
+
+  .radar-scope {
+    --paper: #eef1f4;
+    --surface: #ffffff;
+    --surface-2: #f6f8fa;
+    --ink: #141b23;
+    --ink-2: #37475a;
+    --muted: #6b7d90;
+    --line: #d3dbe3;
+    --line-soft: #e4eaf0;
+    --accent: #1f5f6e;
+    --accent-soft: #d7e6e9;
+    --ok: #2b6d51;
+    --ok-soft: #d6e8de;
+    --warn: #9a6410;
+    --warn-soft: #f4e6cd;
+    --crit: #a13636;
+    --crit-soft: #f3dada;
+    --idle: #c3ccd6;
+    --shadow: 0 1px 2px rgba(20, 27, 35, .06), 0 6px 20px -12px rgba(20, 27, 35, .18);
+  }
+  @media (prefers-color-scheme: dark) {
+    .radar-scope:not([data-theme="light"]) {
+      --paper: #0e1319;
+      --surface: #161d25;
+      --surface-2: #1b232c;
+      --ink: #e8eef4;
+      --ink-2: #b3c2d1;
+      --muted: #8395a8;
+      --line: #2a353f;
+      --line-soft: #222c35;
+      --accent: #6fb9c7;
+      --accent-soft: #1c333a;
+      --ok: #6ec49a;
+      --ok-soft: #172c23;
+      --warn: #d9a75a;
+      --warn-soft: #33270f;
+      --crit: #e5837f;
+      --crit-soft: #34191a;
+      --idle: #38434e;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -14px rgba(0,0,0,.7);
+    }
+  }
+  .radar-scope[data-theme="dark"] {
+    --paper: #0e1319;
+    --surface: #161d25;
+    --surface-2: #1b232c;
+    --ink: #e8eef4;
+    --ink-2: #b3c2d1;
+    --muted: #8395a8;
+    --line: #2a353f;
+    --line-soft: #222c35;
+    --accent: #6fb9c7;
+    --accent-soft: #1c333a;
+    --ok: #6ec49a;
+    --ok-soft: #172c23;
+    --warn: #d9a75a;
+    --warn-soft: #33270f;
+    --crit: #e5837f;
+    --crit-soft: #34191a;
+    --idle: #38434e;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -14px rgba(0,0,0,.7);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 40px 24px 72px; display: flex; flex-direction: column; gap: 40px; }
+
+  h1, h2, h3 { font-family: Archivo, ui-sans-serif, system-ui, sans-serif; text-wrap: balance; margin: 0; letter-spacing: -.018em; }
+  h1 { font-size: clamp(28px, 4.4vw, 42px); font-weight: 700; line-height: 1.08; }
+  h2 { font-size: 20px; font-weight: 600; }
+  h3 { font-size: 15px; font-weight: 600; }
+  p { margin: 0; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+  .radar-scope .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+  }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  /* ---- masthead ---- */
+  header { display: flex; flex-direction: column; gap: 14px; border-bottom: 2px solid var(--ink); padding-bottom: 22px; }
+  .sub { color: var(--ink-2); max-width: 66ch; font-size: 15.5px; }
+  .asof { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+
+  /* ---- tiles ---- */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+  .radar-scope .tile {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
+    padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow);
+    border-top: 3px solid var(--idle);
+  }
+  .tile.is-crit { border-top-color: var(--crit); }
+  .tile.is-warn { border-top-color: var(--warn); }
+  .tile.is-accent { border-top-color: var(--accent); }
+  .tile .num { font-family: Archivo, sans-serif; font-size: 34px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .tile .lbl { font-size: 13px; color: var(--muted); line-height: 1.35; }
+
+  /* ---- filters ---- */
+  .toolbar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; justify-content: space-between; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .radar-scope .chip {
+    font: 500 12.5px/1 "IBM Plex Sans", sans-serif; padding: 8px 13px; border-radius: 999px; cursor: pointer;
+    background: transparent; color: var(--ink-2); border: 1px solid var(--line);
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  .chip:disabled { opacity: .4; cursor: not-allowed; }
+  .chip:disabled:hover { border-color: var(--line); color: var(--ink-2); }
+
+  /* ---- invoice rows ---- */
+  .board { display: flex; flex-direction: column; gap: 10px; }
+  .row.is-hidden { display: none !important; }
+  .radar-scope .row {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
+    box-shadow: var(--shadow); overflow: hidden; display: grid;
+    grid-template-columns: 5px 1fr; align-items: stretch;
+  }
+  .stripe { background: var(--idle); }
+  .row.sev-crit .stripe { background: var(--crit); }
+  .row.sev-warn .stripe { background: var(--warn); }
+  .row.sev-ok   .stripe { background: var(--ok); }
+  .row.sev-info .stripe { background: var(--accent); }
+  .row-in { padding: 16px 20px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+  .rhead { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+  .inv { font-family: "IBM Plex Mono", monospace; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+  .client { font-family: Archivo, sans-serif; font-weight: 600; font-size: 16px; }
+  .ec { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); }
+  .spacer { flex: 1 1 40px; }
+
+  .pill { font: 600 11px/1 "IBM Plex Mono", monospace; letter-spacing: .07em; text-transform: uppercase; padding: 5px 9px; border-radius: 3px; white-space: nowrap; }
+  .pill.crit { background: var(--crit-soft); color: var(--crit); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.ok   { background: var(--ok-soft); color: var(--ok); }
+  .pill.info { background: var(--accent-soft); color: var(--accent); }
+  .pill.flat { background: var(--surface-2); color: var(--muted); }
+
+  /* pipeline rail */
+  .rail { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+  .seg { display: flex; flex-direction: column; gap: 6px; }
+  .seg .bar { height: 7px; border-radius: 2px; background: var(--idle); }
+  .seg.done .bar { background: var(--ok); }
+  .seg.here .bar { background: var(--warn); }
+  .seg.here.hot .bar { background: var(--crit); }
+  .seg.blocked .bar { background: repeating-linear-gradient(115deg, var(--warn) 0 5px, transparent 5px 10px); }
+  .seg .name { font: 500 10.5px/1.25 "IBM Plex Mono", monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .seg.done .name { color: var(--ok); }
+  .seg.here .name { color: var(--warn); font-weight: 600; }
+  .seg.here.hot .name { color: var(--crit); font-weight: 600; }
+  .seg .who { font-size: 11px; color: var(--muted); }
+
+  .diag { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 13.5px; color: var(--ink-2); border-top: 1px solid var(--line-soft); padding-top: 12px; }
+  .diag b { color: var(--ink); font-weight: 600; }
+  .action { font-size: 13.5px; color: var(--ink); background: var(--surface-2); border-left: 2px solid var(--accent); padding: 9px 13px; border-radius: 0 3px 3px 0; }
+  .action .k { font: 600 10.5px/1 "IBM Plex Mono", monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 4px; }
+
+  /* ---- notes ---- */
+  .notes { border-top: 1px solid var(--line-soft); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .notes-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .notes-head .eyebrow { color: var(--muted); }
+  .radar-scope .notes-toggle {
+    font: 500 12px/1 "IBM Plex Sans", sans-serif; background: none; border: 0; padding: 4px 0;
+    color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+  }
+  ul.note-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
+  .radar-scope ul.note-list li {
+    display: grid; grid-template-columns: 74px 1fr 24px; gap: 10px; align-items: baseline;
+    padding: 7px 0; border-bottom: 1px dotted var(--line-soft); font-size: 13.5px;
+  }
+  ul.note-list li:last-child { border-bottom: 0; }
+  .note-date { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+  .note-text { color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .radar-scope .note-del {
+    background: none; border: 0; cursor: pointer; color: var(--muted); font-size: 15px; line-height: 1;
+    padding: 2px 4px; border-radius: 3px; justify-self: end;
+  }
+  .note-del:hover { color: var(--crit); background: var(--crit-soft); }
+  .note-empty { font-size: 13px; color: var(--muted); font-style: italic; }
+  .note-by { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+  .whoami { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .whoami label { font: 500 12px/1 "IBM Plex Sans", sans-serif; color: var(--muted); }
+  .radar-scope .whoami input {
+    font: 500 12.5px/1 "IBM Plex Sans", sans-serif; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; width: 150px;
+  }
+  .whoami input:focus { border-color: var(--accent); }
+  .note-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+  .radar-scope .note-form input[type="date"] {
+    font: 400 12.5px/1 "IBM Plex Mono", monospace; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 3px; padding: 8px 9px; color-scheme: light dark;
+  }
+  .radar-scope .note-form textarea {
+    flex: 1 1 260px; min-height: 38px; resize: vertical; font: 400 13.5px/1.45 "IBM Plex Sans", sans-serif;
+    color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 3px; padding: 8px 10px;
+  }
+  .note-form textarea::placeholder { color: var(--muted); }
+  .radar-scope .note-form button.add {
+    font: 600 12.5px/1 "IBM Plex Sans", sans-serif; padding: 10px 15px; border-radius: 3px; cursor: pointer;
+    background: var(--ink); color: var(--paper); border: 1px solid var(--ink);
+  }
+  .note-form button.add:hover { background: var(--accent); border-color: var(--accent); }
+  .note-form button.add:disabled { opacity: .45; cursor: not-allowed; }
+  .note-status { font-size: 12px; color: var(--muted); min-height: 1em; }
+  .note-status.err { color: var(--crit); }
+
+  /* ---- panels ---- */
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; box-shadow: var(--shadow); padding: 26px 28px; display: flex; flex-direction: column; gap: 18px; }
+  .panel.alarm { border-color: var(--crit); border-left-width: 4px; }
+  .prose { display: flex; flex-direction: column; gap: 12px; color: var(--ink-2); max-width: 70ch; font-size: 14.5px; }
+  .prose b, .prose strong { color: var(--ink); font-weight: 600; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  .tscroll { overflow-x: auto; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  th { font: 500 10.5px/1.3 "IBM Plex Mono", monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td.mono, td .kw { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .kw { display: inline-block; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 12px; padding: 2px 7px; border-radius: 3px; }
+
+  ol.steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px; counter-reset: s; }
+  ol.steps li { display: grid; grid-template-columns: 30px 1fr; gap: 14px; counter-increment: s; font-size: 14.5px; color: var(--ink-2); }
+  .radar-scope ol.steps li::before {
+    content: counter(s); font: 600 12px/26px "IBM Plex Mono", monospace; text-align: center;
+    height: 26px; border-radius: 3px; background: var(--ink); color: var(--paper);
+  }
+  ol.steps li b { color: var(--ink); font-weight: 600; }
+
+  .ladder { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2px; background: var(--line); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .rung { background: var(--surface); padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; }
+  .rung .d { font: 600 11px/1 "IBM Plex Mono", monospace; letter-spacing: .1em; text-transform: uppercase; }
+  .rung .t { font-size: 13.5px; color: var(--ink-2); }
+  .rung.r1 .d { color: var(--muted); }
+  .rung.r2 .d { color: var(--accent); }
+  .rung.r3 .d { color: var(--warn); }
+  .rung.r4 .d { color: var(--crit); }
+
+  footer { color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 18px; display: flex; flex-direction: column; gap: 6px; }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  @media (max-width: 640px) {
+    .rail { grid-template-columns: 1fr; gap: 8px; }
+    .seg { display: grid; grid-template-columns: 7px 1fr; gap: 10px; align-items: center; }
+    .seg .bar { height: 100%; min-height: 26px; width: 7px; }
+    .seg > .name { grid-column: 2; }
+    .seg .who { grid-column: 2; }
+  }
+
+
+  /* layout concept: a single vertical spine down the left, color-switching
+     between an "automatic" teal and a "manual" amber as it passes each
+     step's marker, with system-connection pills hung off the steps that
+     touch an outside system. */
+  .map-scope {
+    --paper: #f3f1ea;
+    --surface: #ffffff;
+    --surface-2: #faf8f2;
+    --ink: #201c14;
+    --ink-2: #534c3c;
+    --muted: #8a8168;
+    --line: #e1dbc8;
+    --line-soft: #ece7d8;
+    --auto: #1f6e5c;
+    --auto-soft: #d9ece5;
+    --manual: #9a5b10;
+    --manual-soft: #f4e3c9;
+    --crit: #a13636;
+    --crit-soft: #f3dada;
+    --shadow: 0 1px 2px rgba(32,28,20,.06), 0 10px 28px -16px rgba(32,28,20,.22);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    .map-scope:not([data-theme="light"]) {
+      --paper: #16140f;
+      --surface: #1d1a13;
+      --surface-2: #211e16;
+      --ink: #f1ede1;
+      --ink-2: #c9c1ab;
+      --muted: #938a71;
+      --line: #322c20;
+      --line-soft: #292417;
+      --auto: #6fc9ae;
+      --auto-soft: #1c3129;
+      --manual: #e3ad63;
+      --manual-soft: #3a2a12;
+      --crit: #e5837f;
+      --crit-soft: #34191a;
+      --shadow: 0 1px 2px rgba(0,0,0,.5), 0 12px 32px -18px rgba(0,0,0,.8);
+      color-scheme: dark;
+    }
+  }
+  .map-scope[data-theme="dark"] {
+    --paper: #16140f;
+    --surface: #1d1a13;
+    --surface-2: #211e16;
+    --ink: #f1ede1;
+    --ink-2: #c9c1ab;
+    --muted: #938a71;
+    --line: #322c20;
+    --line-soft: #292417;
+    --auto: #6fc9ae;
+    --auto-soft: #1c3129;
+    --manual: #e3ad63;
+    --manual-soft: #3a2a12;
+    --crit: #e5837f;
+    --crit-soft: #34191a;
+    --shadow: 0 1px 2px rgba(0,0,0,.5), 0 12px 32px -18px rgba(0,0,0,.8);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .map-scope .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding-top: 40px;
+    padding-bottom: 72px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+  }
+
+  h1, h2, h3 { font-family: Archivo, ui-sans-serif, system-ui, sans-serif; text-wrap: balance; margin: 0; letter-spacing: -.015em; }
+  h1 { font-size: clamp(26px, 5vw, 38px); font-weight: 800; line-height: 1.08; }
+  h2 { font-size: 15.5px; font-weight: 700; }
+  p { margin: 0; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .map-scope .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+  }
+
+  header { display: flex; flex-direction: column; gap: 12px; border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
+  .sub { color: var(--ink-2); max-width: 62ch; font-size: 15px; }
+
+  /* ---- legend / stat strip ---- */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; }
+  .map-scope .legend .key {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 14px 7px 10px; font-size: 12.5px; color: var(--ink-2); box-shadow: var(--shadow);
+  }
+  .legend .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .legend .dot.auto { background: var(--auto); }
+  .legend .dot.manual { background: var(--manual); }
+  .legend .dot.sys { background: var(--ink-2); border-radius: 3px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 10px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 2px; }
+  .stat .n { font-family: Archivo, sans-serif; font-weight: 800; font-size: 26px; line-height: 1; }
+  .stat.auto .n { color: var(--auto); }
+  .stat.manual .n { color: var(--manual); }
+  .stat .l { font-size: 11.5px; color: var(--muted); }
+
+  /* ---- timeline ---- */
+  .timeline { position: relative; display: flex; flex-direction: column; gap: 0; }
+  .map-scope .step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 16px;
+    padding-bottom: 28px;
+    min-width: 0;
+  }
+  .step:last-child { padding-bottom: 0; }
+  .map-scope .rail {
+    position: relative;
+    display: flex;
+    justify-content: center;
+  }
+  .map-scope .rail::before {
+    content: "";
+    position: absolute;
+    top: 30px;
+    bottom: -28px;
+    width: 3px;
+    background: var(--line);
+  }
+  .step:last-child .rail::before { display: none; }
+  .step.auto .rail::before { background: var(--auto); opacity: .35; }
+  .step.manual .rail::before { background: var(--manual); opacity: .4; }
+  .map-scope .marker {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 13px;
+    border: 2px solid var(--line); background: var(--surface); color: var(--ink-2);
+    z-index: 1; flex: none;
+  }
+  .step.auto .marker { border-color: var(--auto); color: var(--auto); background: var(--auto-soft); }
+  .step.manual .marker { border-color: var(--manual); color: var(--manual); background: var(--manual-soft); }
+
+  .map-scope .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;
+    min-width: 0; border-left: 3px solid var(--line);
+  }
+  .step.auto .card { border-left-color: var(--auto); }
+  .step.manual .card { border-left-color: var(--manual); }
+
+  .chead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+  .ctitle { font-family: Archivo, sans-serif; font-weight: 700; font-size: 16px; }
+  .map-scope .tag {
+    font: 600 10.5px/1 "IBM Plex Mono", monospace; letter-spacing: .07em; text-transform: uppercase;
+    padding: 4px 9px; border-radius: 3px; white-space: nowrap;
+  }
+  .tag.auto { background: var(--auto-soft); color: var(--auto); }
+  .tag.manual { background: var(--manual-soft); color: var(--manual); }
+  .ctext { color: var(--ink-2); font-size: 14px; max-width: 64ch; }
+  .ctext b { color: var(--ink); font-weight: 600; }
+
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .map-scope .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font: 500 11.5px/1 "IBM Plex Sans", sans-serif; color: var(--ink);
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px 5px 8px;
+  }
+  .pill .ic { font-size: 11px; opacity: .7; }
+
+  .map-scope .callout {
+    font-size: 13px; color: var(--ink-2); background: var(--surface-2);
+    border-left: 2px solid var(--crit); padding: 8px 12px; border-radius: 0 4px 4px 0;
+  }
+  .callout b { color: var(--crit); }
+
+  footer { color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 16px; }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  @media (max-width: 520px) {
+    .step { grid-template-columns: 28px 1fr; gap: 12px; }
+    .marker { width: 28px; height: 28px; font-size: 11px; }
+    .rail::before { top: 26px; }
+  }
+
+</style>
+
+<div class="shell-bar" role="tablist" aria-label="Case study view">
+  <button type="button" class="shell-tab" id="tab-radar" role="tab" aria-selected="true" aria-controls="panel-radar">Live Radar</button>
+  <button type="button" class="shell-tab" id="tab-map" role="tab" aria-selected="false" aria-controls="panel-map">Autonomy Map</button>
+  <span class="shell-label">Anonymized case study</span>
+</div>
+
+<div class="radar-scope" id="panel-radar" role="tabpanel" aria-labelledby="tab-radar">
+
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Solara APAC &middot; Order-to-invoice handoff</p>
+    <h1>Regional Billing Handoff Radar</h1>
+    <p class="eyebrow" style="color:var(--muted)">Anonymized case study &mdash; names, dates, amounts and identifying details are fictionalized; structure and logic are unchanged</p>
+    <p class="sub">Two live billing items reconstructed from Teams and Salesforce. Nobody updated a tracker to produce this &mdash; every stage below was read off the messages your team already sends and the Order records they already create.</p>
+    <p class="asof eyebrow"><span>As of 14 Dec 2025 APAC time &middot; Marlowe Institute's two runs (INV-8102, INV-8390) both flipped to Paid in Salesforce since the last scan &mdash; Northfield Retail Co. (INV-8841) surfaced for the first time this scan, nearly two weeks overdue with Finance and invisible to every earlier scan</span><span>Sources: Sales &amp; Ops &middot; Finance Coordination EU/SG &middot; Mira&harr;Priya &middot; Mira&harr;Devin &middot; Mira&harr;Lin &middot; SFDC Order</span></p>
+  </header>
+
+  <section class="tiles">
+    <div class="tile is-accent"><span class="num">2</span><span class="lbl">Newly confirmed paid this scan &mdash; Marlowe Institute Aug run (INV-8102) and Marlowe Institute Sep run (INV-8390), both flipped to Paid in Salesforce</span></div>
+    <div class="tile is-crit"><span class="num">1</span><span class="lbl">Critical &mdash; Northfield Retail Co. <span class="mono">(INV-8841)</span> stuck with Finance since 23 Nov, no reply to the 30 Nov nudge, ~2 weeks overdue</span></div>
+    <div class="tile"><span class="num">1</span><span class="lbl">Resolved this scan &mdash; Hartley Partners <span class="mono">(INV-8840)</span> issued 30 Nov, now just awaiting the client's payment</span></div>
+    <div class="tile is-warn"><span class="num">1</span><span class="lbl">Blind spot found &mdash; Northfield's order has no Billing Country Code set, so every scan until now filtered it out entirely</span></div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:14px;">
+    <div class="toolbar">
+      <h2>Live items</h2>
+      <div class="chips" role="group" aria-label="Filter items">
+        <button type="button" class="chip" data-f="all" aria-pressed="true">All</button>
+        <button type="button" class="chip" data-f="me" aria-pressed="false">Waiting on Mira</button>
+        <button type="button" class="chip" data-f="fin" aria-pressed="false">With Finance</button>
+        <button type="button" class="chip" data-f="ops" aria-pressed="false">With Ops (Devin)</button>
+        <button type="button" class="chip" data-f="gov" aria-pressed="false">Vendors@Gov</button>
+      </div>
+    </div>
+    <div class="whoami" id="whoami" hidden>
+      <label for="whoami-input">Notes are shared. Sign yours as</label>
+      <input id="whoami-input" type="text" maxlength="24" placeholder="e.g. Mira" autocomplete="off">
+    </div>
+
+    <div class="board" id="board">
+
+      <!-- INV-8841 Northfield Retail Co. -->
+      <article class="row sev-crit" data-tags="fin me" data-note-key="INV-8841">
+        <div class="stripe"></div>
+        <div class="row-in">
+          <div class="rhead">
+            <span class="inv">INV-8841</span>
+            <span class="client">Northfield Retail Co.</span>
+            <span class="ec">EC-552031</span>
+            <span class="spacer"></span>
+            <span class="pill crit">Critical &middot; ~2 weeks overdue</span>
+            <span class="pill flat">Direct bill</span>
+          </div>
+          <div class="rail">
+            <div class="seg done"><div class="bar"></div><span class="name">Requested</span><span class="who">Mira, 23 Nov</span></div>
+            <div class="seg done"><div class="bar"></div><span class="name">Notes added</span><span class="who">bundled with sync, 23 Nov</span></div>
+            <div class="seg done"><div class="bar"></div><span class="name">Synced</span><span class="who">Mira, 23 Nov &mdash; &ldquo;order synced for both already&rdquo;</span></div>
+            <div class="seg here hot"><div class="bar"></div><span class="name">Issued &middot; ~11 bd</span><span class="who">Finance &mdash; flagged 30 Nov, silence since</span></div>
+            <div class="seg"><div class="bar"></div><span class="name">Sent to client</span><span class="who">Finance</span></div>
+          </div>
+          <div class="diag">
+            <span><b>Blocked at:</b> Finance, roughly 11 business days past the 3-day SYNCED&rarr;ISSUED target</span>
+            <span><b>Bill to:</b> h.lim@northfieldretail.example</span>
+            <span><b>SFDC:</b> In Process &middot; Sync Status still Pending, unchanged since 23 Nov</span>
+          </div>
+          <div class="action"><span class="k">New this scan &mdash; previously invisible, not just newly overdue</span>Mira synced this order herself on 23 Nov ("order synced for both already so fairprice more or less closed!") and flagged to Sales on 30 Nov that Finance hadn't issued it. Nobody has mentioned it in Teams since. It never appeared on any earlier board because its Salesforce Order record has no Billing Country Code set &mdash; the exact filter this radar uses to scope to the region &mdash; so it fell outside every prior Salesforce pull. This is well past the target+5 OPEX-item threshold; recommend escalating straight to Faisal/Marcus Wei rather than a routine in-thread nudge, and flagging the Billing Country Code gap to whoever owns the Salesforce write-back, since it means other genuine regional orders could be sitting unseen the same way. (If notes already exist on this row from an earlier, unpublished check, treat this as "unless already chased.")</div>
+        </div>
+      </article>
+
+      <!-- INV-8840 Hartley Partners -->
+      <article class="row sev-ok" data-tags="fin" data-note-key="INV-8840">
+        <div class="stripe"></div>
+        <div class="row-in">
+          <div class="rhead">
+            <span class="inv">INV-8840</span>
+            <span class="client">Hartley Partners (People Leadership Workshop)</span>
+            <span class="ec">EC-552009 &middot; 3 workshops merged into 1 invoice</span>
+            <span class="spacer"></span>
+            <span class="pill ok">Issued 30 Nov</span>
+            <span class="pill flat">Awaiting payment</span>
+          </div>
+          <div class="rail">
+            <div class="seg done"><div class="bar"></div><span class="name">Requested</span><span class="who">Priya, 23 Nov</span></div>
+            <div class="seg done"><div class="bar"></div><span class="name">Notes added</span><span class="who">Priya, 23 Nov</span></div>
+            <div class="seg done"><div class="bar"></div><span class="name">Synced</span><span class="who">Mira, 23 Nov</span></div>
+            <div class="seg done"><div class="bar"></div><span class="name">Issued</span><span class="who">Carlos (Finance), 30 Nov &mdash; &ldquo;invoices sent&rdquo;</span></div>
+            <div class="seg done"><div class="bar"></div><span class="name">Sent to client</span><span class="who">Finance, 30 Nov</span></div>
+          </div>
+          <div class="diag">
+            <span><b>End to end:</b> 6 days, Requested 23 Nov &rarr; Issued 30 Nov</span>
+            <span><b>Bill to:</b> r.ibrahim@hartleypartners.example &mdash; 33,780 USD ex-tax</span>
+            <span><b>SFDC:</b> In Process &mdash; awaiting payment (known lag: SFDC hasn't caught up to the 30 Nov issuance yet)</span>
+          </div>
+          <div class="action"><span class="k">Resolved since the last scan &mdash; nothing needed from Mira</span>Priya and Faisal chased Finance on 30 Nov ("it's been a week"); Carlos confirmed invoices sent that same afternoon. This was the item flagged as blocked on the last board &mdash; it's now just a wait on Hartley Partners's payment, same as the other closed items.</div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section class="panel alarm">
+    <div>
+      <p class="eyebrow" style="color:var(--crit)">Finding &middot; updated this scan</p>
+      <h2>Salesforce still can't answer "what stage is this at" &mdash; and the scoping filter has its own blind spot</h2>
+    </div>
+    <div class="prose">
+      <p>You said checking SFDC takes a lot of back and forth. The core problem from the last scan still holds: of the 180 regional Order records verified 15 Oct, <code class="mono">Sync Status</code> read "Pending" on 176 and blank on 4, and <code class="mono">Invoice Date</code>, <code class="mono">Total Invoice Amount</code> and <code class="mono">Balance Due</code> were null on 100%. That pattern just broke for the first time: Marlowe Institute's September run (<b>INV-8390</b>) now reads <code class="mono">Sync Status: Synced</code> instead of Pending &mdash; the only record, ever, to hold anything but Pending or blank. Worth flagging to whoever owns the write-back as a sign something changed, even though the amount/date fields are still untouched.</p>
+      <p><b>New this scan &mdash; the R1/R2/R3 filter itself has a gap.</b> Every scan so far, including this one's first pass, scoped Salesforce Orders to <code class="mono">Billing_Country_Code__c IN ('R1','R2','R3')</code>. That field is null on <b>Northfield Retail Co.'s INV-8841</b> &mdash; a real regional order, billed to h.lim@northfieldretail.example &mdash; so it was excluded from every prior pull, Teams-sourced or not, and sat unseen with Finance for nearly two weeks. A wider check found the same null Billing Country Code on several other plainly-regional orders (Fernwood Polytechnic, Veridian University, Metro Redevelopment Authority, Cendra, Harborview Welfare Services, Caldwell University), though those carry "PUB-" project codes from the separate self-service public-programme system Mira's team doesn't manually handle, so they're out of scope for this radar rather than missed billing items. Northfield's "EC-" code is the one that matters here, because EC- is exactly the manual Priya&rarr;Devin&rarr;Finance workflow this board tracks.</p>
+      <p><b>What follows from this:</b> the SLA/finding framework still holds and Teams is still the ledger, as below. But until the Billing Country Code field is reliably populated, this radar can't trust the Salesforce filter alone to know it has seen every live regional order &mdash; worth a note to the SFDC admin alongside the Sync Status / Invoice Date ask from before.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div>
+      <p class="eyebrow">The fix &middot; no new system, no new tracker</p>
+      <h2>One thread per invoice, one word per handoff</h2>
+    </div>
+    <div class="prose">
+      <p>Your team already posts everything needed. What's missing is that it lands in three different chats, in prose, with no consistent key &mdash; so state can only be reassembled by a human reading backwards. Two small changes make it readable automatically.</p>
+      <p><b>Change one: one thread per invoice, in Sales &amp; Ops only.</b> Opened by whoever requests billing, titled to a fixed shape:</p>
+    </div>
+    <div class="tscroll">
+      <p class="mono" style="background:var(--surface-2);border:1px solid var(--line);border-radius:3px;padding:12px 14px;font-size:13px;white-space:nowrap;">[BILL] INV-8050 · EC-551884 · Kestrel Environmental Authority · Vendors@Gov</p>
+    </div>
+    <div class="prose">
+      <p>Every later message about that invoice is a reply in that thread. Finance Coordination stays for finance-wide topics; your 1:1s stay for thinking out loud. Billing state lives in exactly one place.</p>
+      <p><b>Change two: each function starts its reply with one keyword.</b> Nobody types more than they already do, and nobody has to spell your name &mdash; <b>I key off the INV number, not a mention.</b> "Mirael", "Mirabel", or no mention at all makes no difference.</p>
+    </div>
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>Keyword</th><th>Who types it</th><th>Means</th><th>Also include</th></tr></thead>
+        <tbody>
+          <tr><td><span class="kw">REQUESTED</span></td><td>Sales (Priya, Faisal, Theo)</td><td>Billing raised, thread opened</td><td>Deal Support Process link</td></tr>
+          <tr><td><span class="kw">NOTES</span></td><td>Sales</td><td>Billing notes complete &mdash; Ops unblocked</td><td>Portal instructions if Vendors@Gov</td></tr>
+          <tr><td><span class="kw">SYNCED</span></td><td>Ops (Devin, Lin)</td><td>Order synced, INV number exists</td><td>Order link</td></tr>
+          <tr><td><span class="kw">ISSUED</span></td><td>Finance (Carlos, Elena)</td><td>Invoice generated and sent</td><td>PDF, and who it went to</td></tr>
+          <tr><td><span class="kw">SUBMITTED</span></td><td>Mira (gov portal) / Finance (direct)</td><td>Uploaded to Vendors@Gov, or invoice sent to the client</td><td>Screenshot + reference number</td></tr>
+          <tr><td><span class="kw">BLOCKED</span></td><td>Anyone</td><td>Can't proceed, clock keeps running</td><td>One line on what's needed</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>That's it. <code class="mono">BLOCKED</code> is the one addition to how your team already writes, and it's the important one &mdash; right now a stall and a silence look identical from outside. Northfield is proof again this scan: nobody typed a word after 30 Nov, so nobody but this scan noticed it was still sitting there.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div>
+      <p class="eyebrow">Clocks &middot; proposed, adjust to taste</p>
+      <h2>What "too slow" means, so nudging isn't a judgement call</h2>
+    </div>
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>Handoff</th><th>Target</th><th>Reasoning</th></tr></thead>
+        <tbody>
+          <tr><td>REQUESTED &rarr; NOTES</td><td class="mono">1 business day</td><td>The commonest stall. Aurelia Assets lost 4 days here previously.</td></tr>
+          <tr><td>NOTES &rarr; SYNCED</td><td class="mono">1 business day</td><td>Devin and Mira turn these around same-day when unblocked.</td></tr>
+          <tr><td>SYNCED &rarr; ISSUED</td><td class="mono">3 business days</td><td>Finance is 10h behind and supports the global business. Three the region days is roughly two of theirs &mdash; deliberately generous, so breaching it is meaningful.</td></tr>
+          <tr><td>ISSUED &rarr; SUBMITTED</td><td class="mono">1 business day</td><td>Mira's step, and only for government-portal clients. Small and visible, which is the point.</td></tr>
+          <tr><td>Vendors@Gov buffer</td><td class="mono">7 days before terms</td><td>Portal submission needs headroom before the client's payment date.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>Under these targets, a healthy invoice closes in about <b>6 business days</b>. Hartley Partners (INV-8840) landed close to that this cycle &mdash; 6 days requested to issued, now just awaiting payment. Northfield (INV-8841) is the opposite case: synced the same day as Hartley Partners, but stuck at Finance for roughly 11 business days with zero reply since Mira's 30 Nov flag &mdash; past target+5 and overdue for a standing OPEX mention. Marlowe Institute's two runs (INV-8102, INV-8390) both closed out this scan, flipping to Paid in Salesforce; Bellhaven Health, Aurelia Assets, Chantelle Cosmetics SG and KEA remain closed from the prior scan's confirmations.</p>
+    </div>
+    <div class="ladder">
+      <div class="rung r1"><span class="d">Day 0–1</span><span class="t">Silent. Within target, no noise.</span></div>
+      <div class="rung r2"><span class="d">Target + 1</span><span class="t">Nudge in-thread naming the owner and the keyword owed. Drafted, ready to send.</span></div>
+      <div class="rung r3"><span class="d">Target + 3</span><span class="t">Escalate to Faisal / Marcus, with the timestamped history attached.</span></div>
+      <div class="rung r4"><span class="d">Target + 5</span><span class="t">Standing item at Weekly OPEX. Pattern, not incident.</span></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div>
+      <p class="eyebrow">My side of it</p>
+      <h2>What runs automatically</h2>
+    </div>
+    <ol class="steps">
+      <li><div><b>08:00 APAC time each weekday, I read the threads.</b> All three venues, keyed on INV and EC codes, cross-checked against SFDC Order <code class="mono">Status</code> for anything that has quietly gone to Paid.</div></li>
+      <li><div><b>I rebuild this board and update it in place.</b> Same link, always current. Nobody types a status into a tracker.</div></li>
+      <li><div><b>Mira gets a short message &mdash; only what needs her.</b> Not the whole pipeline. "INV-8841 is 2 weeks with Finance and nobody's replied" is the entire message. If nothing needs her, she hears nothing.</div></li>
+      <li><div><b>Every breach arrives as a drafted nudge.</b> Addressed to the right person, in the right thread, with the timestamps already in it. She reads it and sends it, or does not.</div></li>
+      <li><div><b>When sales come down hard, the answer is already written.</b> Timestamped, per step, per owner. No investigation, no four places to check, no defending the timeline from memory.</div></li>
+    </ol>
+    <div class="prose">
+      <p>Until the convention is adopted, this still works &mdash; just less precisely. I can already reconstruct everything on this page from prose messages. The keywords make it exact and let me tell a stall apart from a silence.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>Reconstructed 14 Dec 2025 from Microsoft Teams (Sales &amp; Ops, Finance Coordination: Solara EU/APAC, and 1:1 threads with Devin Oh, Priya Nathan and Lin Zhao) and Salesforce Order records. Stage timestamps are the timestamps of the messages that reported them, which is the only record that currently exists.</p>
+    <p>SLA targets and the escalation ladder are proposals for discussion, not existing Solara policy. Everything on the live board above is drawn from source records.</p>
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    var board = document.getElementById('board');
+    if (!board) { return; }
+    var rows = Array.prototype.slice.call(board.querySelectorAll('.row'));
+    var chips = Array.prototype.slice.call(document.querySelectorAll('.chip'));
+
+    function tagsOf(row) {
+      return (row.getAttribute('data-tags') || '').split(/\s+/).filter(Boolean);
+    }
+    function matches(row, f) {
+      return f === 'all' || tagsOf(row).indexOf(f) !== -1;
+    }
+
+    // Label each chip with its live count, so an empty filter is obvious before clicking.
+    chips.forEach(function (chip) {
+      var f = chip.getAttribute('data-f');
+      var n = rows.filter(function (r) { return matches(r, f); }).length;
+      chip.textContent = chip.textContent.trim() + ' · ' + n;
+      chip.disabled = n === 0;
+    });
+
+    function apply(f) {
+      rows.forEach(function (row) {
+        row.classList.toggle('is-hidden', !matches(row, f));
+      });
+      chips.forEach(function (c) {
+        c.setAttribute('aria-pressed', c.getAttribute('data-f') === f ? 'true' : 'false');
+      });
+    }
+
+    chips.forEach(function (chip) {
+      chip.addEventListener('click', function () { apply(chip.getAttribute('data-f')); });
+    });
+
+    apply('all');
+  })();
+
+  /* ---- Working notes: stored in the artifact's db, NOT in this HTML,
+         so the scheduled rescan can republish the board without
+         touching anything typed here. ---- */
+  (function () {
+    var SEED = {
+      'INV-8050': [
+        { date: '2025-10-14', text: 'Messaged Renee — no reply.', by: 'Mira' },
+        { date: '2025-10-15', text: 'Sent a chaser to Carlos Ramos.', by: 'Mira' }
+      ]
+    };
+
+    // Who is writing. The page has no identity capability, so each viewer
+    // names themselves once; the value stays in their own browser while the
+    // notes themselves stay shared.
+    var WHO_KEY = 'radar.signature';
+    var whoWrap = document.getElementById('whoami');
+    var whoInput = document.getElementById('whoami-input');
+    function readWho() {
+      try { return (localStorage.getItem(WHO_KEY) || '').trim(); } catch (e) { return ''; }
+    }
+    function writeWho(v) {
+      try { localStorage.setItem(WHO_KEY, v); } catch (e) { /* private window */ }
+    }
+    var who = readWho();
+    if (whoInput) {
+      whoInput.value = who;
+      whoInput.addEventListener('input', function () {
+        who = whoInput.value.trim().slice(0, 24);
+        writeWho(who);
+      });
+    }
+
+    var rows = Array.prototype.slice.call(document.querySelectorAll('.row[data-note-key]'));
+    if (!rows.length) { return; }
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    function today() {
+      var d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    function pretty(iso) {
+      var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+      if (!m) { return iso || ''; }
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return Number(m[3]) + ' ' + months[Number(m[2]) - 1] + ' ' + m[1].slice(2);
+    }
+
+    // Build the notes UI for every row up front, so the section exists
+    // whether or not a store ever answers.
+    rows.forEach(function (row) {
+      var key = row.getAttribute('data-note-key');
+      var el = document.createElement('div');
+      el.className = 'notes';
+      el.innerHTML =
+        '<div class="notes-head"><span class="eyebrow">Shared notes</span>' +
+        '<button type="button" class="notes-toggle" aria-expanded="false">Add a note</button></div>' +
+        '<ul class="note-list"></ul>' +
+        '<form class="note-form" hidden>' +
+          '<input type="date" aria-label="Note date">' +
+          '<textarea rows="1" aria-label="Note" placeholder="e.g. Messaged Renee, no reply"></textarea>' +
+          '<button type="submit" class="add">Save</button>' +
+        '</form>' +
+        '<p class="note-status" role="status"></p>';
+      row.querySelector('.row-in').appendChild(el);
+      row._notes = {
+        key: key,
+        list: el.querySelector('.note-list'),
+        form: el.querySelector('.note-form'),
+        toggle: el.querySelector('.notes-toggle'),
+        date: el.querySelector('input[type="date"]'),
+        text: el.querySelector('textarea'),
+        save: el.querySelector('button.add'),
+        status: el.querySelector('.note-status'),
+        entries: []
+      };
+      row._notes.list.innerHTML = '<li class="note-empty">Loading…</li>';
+    });
+
+    function render(row, editable) {
+      var n = row._notes;
+      var items = n.entries.slice().sort(function (a, b) {
+        return String(a.date || '').localeCompare(String(b.date || ''));
+      });
+      if (!items.length) {
+        n.list.innerHTML = '<li class="note-empty">No notes yet.</li>';
+        return;
+      }
+      n.list.innerHTML = items.map(function (e) {
+        return '<li><span class="note-date">' + esc(pretty(e.date)) + '</span>' +
+               '<span class="note-text">' +
+                 (e.by ? '<span class="note-by">' + esc(e.by) + '</span> ' : '') +
+                 esc(e.text) + '</span>' +
+               (editable
+                 ? '<button type="button" class="note-del" data-id="' + esc(e.id) + '" aria-label="Delete note" title="Delete note">&times;</button>'
+                 : '<span></span>') +
+               '</li>';
+      }).join('');
+    }
+
+    function offline(msg) {
+      rows.forEach(function (row) {
+        var n = row._notes;
+        n.entries = (SEED[n.key] || []).map(function (e, i) {
+          return { id: 'seed' + i, date: e.date, text: e.text };
+        });
+        render(row, false);
+        n.toggle.hidden = true;
+        n.status.textContent = msg;
+      });
+    }
+
+    var api = (typeof window !== 'undefined' && window.claude && typeof window.claude.use === 'function')
+      ? window.claude.use('db')
+      : Promise.resolve(null);
+
+    api.then(function (db) {
+      if (whoWrap) { whoWrap.hidden = false; }
+      if (!db) { offline('Notes need the live view of this page — open it from the artifact link to add your own.'); return; }
+
+      rows.forEach(function (row) {
+        var n = row._notes;
+        var ref = db.doc('notes/' + n.key);
+        var seeded = false;
+
+        function persist(entries) {
+          n.entries = entries;
+          return ref.set({ entries: entries, updatedAt: new Date().toISOString() });
+        }
+
+        ref.onSnapshot(function (snap) {
+          if (!snap.exists) {
+            // First ever view of this row's notes: lay down the starting
+            // entries once. Deleting them later leaves the document in
+            // place, so they never come back.
+            if (!seeded) {
+              seeded = true;
+              var start = (SEED[n.key] || []).map(function (e, i) {
+                return { id: 'n' + Date.now() + i, date: e.date, text: e.text, by: e.by || '' };
+              });
+              persist(start).catch(function () { /* another view won the race */ });
+            }
+            return;
+          }
+          var data = snap.data() || {};
+          n.entries = Array.isArray(data.entries) ? data.entries : [];
+          render(row, true);
+        }, function (err) {
+          n.status.className = 'note-status err';
+          n.status.textContent = 'Notes are unavailable right now (' + err.code + '). Anything already saved is safe.';
+        });
+
+        n.toggle.addEventListener('click', function () {
+          var open = n.form.hidden;
+          n.form.hidden = !open;
+          n.toggle.setAttribute('aria-expanded', String(open));
+          n.toggle.textContent = open ? 'Cancel' : 'Add a note';
+          if (open) { n.date.value = n.date.value || today(); n.text.focus(); }
+        });
+
+        n.form.addEventListener('submit', function (ev) {
+          ev.preventDefault();
+          var text = n.text.value.trim();
+          if (!text) { n.text.focus(); return; }
+          if (!who) {
+            n.status.className = 'note-status err';
+            n.status.textContent = 'Add your name above first — notes are shared, so they need a signature.';
+            if (whoInput) { whoInput.focus(); }
+            return;
+          }
+          var entry = { id: 'n' + Date.now(), date: n.date.value || today(), text: text, by: who };
+          n.save.disabled = true;
+          n.status.className = 'note-status';
+          n.status.textContent = 'Saving…';
+          persist(n.entries.concat([entry])).then(function () {
+            n.text.value = '';
+            n.date.value = today();
+            n.status.textContent = 'Saved.';
+            setTimeout(function () { if (n.status.textContent === 'Saved.') { n.status.textContent = ''; } }, 2500);
+          }).catch(function (err) {
+            n.status.className = 'note-status err';
+            n.status.textContent = 'Could not save (' + (err && err.code ? err.code : 'error') + '). Your text is still in the box — try again.';
+          }).then(function () { n.save.disabled = false; });
+        });
+
+        // Enter saves, Shift+Enter makes a new line.
+        n.text.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); n.form.requestSubmit(); }
+        });
+
+        n.list.addEventListener('click', function (ev) {
+          var btn = ev.target.closest('.note-del');
+          if (!btn) { return; }
+          var id = btn.getAttribute('data-id');
+          var target = n.entries.filter(function (e) { return e.id === id; })[0];
+          if (target && target.by && who && target.by !== who) {
+            if (!window.confirm('Delete a note written by ' + target.by + '?')) { return; }
+          }
+          persist(n.entries.filter(function (e) { return e.id !== id; })).catch(function (err) {
+            n.status.className = 'note-status err';
+            n.status.textContent = 'Could not delete (' + (err && err.code ? err.code : 'error') + ').';
+          });
+        });
+      });
+    }).catch(function () {
+      offline('Notes could not load in this view.');
+    });
+  })();
+</script>
+</div>
+
+<div class="map-scope" id="panel-map" role="tabpanel" aria-labelledby="tab-map" hidden>
+
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">How the billing radar actually runs</p>
+    <h1>Autonomy Map</h1>
+    <p class="sub">Nine points in one scheduled run, in order. Teal markers run on their own; amber markers wait on a person. The small pills show which outside system a step actually reaches into.</p>
+  </header>
+
+  <div class="legend">
+    <span class="key"><span class="dot auto"></span>Runs independently</span>
+    <span class="key"><span class="dot manual"></span>Needs a person</span>
+    <span class="key"><span class="dot sys"></span>Touches an outside system</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat auto"><span class="n">6</span><span class="l">steps run with no one watching</span></div>
+    <div class="stat manual"><span class="n">3</span><span class="l">steps stop for a human decision</span></div>
+    <div class="stat"><span class="n">3</span><span class="l">outside systems touched in total</span></div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="step auto">
+      <div class="rail"><div class="marker">1</div></div>
+      <div class="card">
+        <div class="chead"><span class="ctitle">Wakes itself up</span><span class="tag auto">Automatic</span></div>
+        <p class="ctext">Fires on its own schedule &mdash; no one has to remember to kick it off or be at a desk when it runs.</p>
+      </div>
+    </div>
+
+    <div class="step auto">
+      <div class="rail"><div class="marker">2</div></div>
+      <div class="card">
+        <div class="chead"><span class="ctitle">Reads its own last report</span><span class="tag auto">Automatic</span></div>
+        <p class="ctext">Opens the page it published last time and treats it as memory: whatever was still outstanding then is the starting list for this run.</p>
+        <div class="pills"><span class="pill"><span class="ic">&#8635;</span>Published dashboard</span></div>
+      </div>
+    </div>
+
+    <div class="step auto">
+      <div class="rail"><div class="marker">3</div></div>
+      <div class="card">
+        <div class="chead"><span class="ctitle">Pulls the current records</span><span class="tag auto">Automatic</span></div>
+        <p class="ctext">Queries the system of record for every order and invoice in scope, and whatever status fields it actually keeps up to date.</p>
+        <div class="pills"><span class="pill"><span class="ic">&#8635;</span>CRM</span></div>
+      </div>
+    </div>
+
+    <div class="step auto">
+      <div class="rail"><div class="marker">4</div></div>
+      <div class="card">
+        <div class="chead"><span class="ctitle">Searches for status updates</span><span class="tag auto">Automatic</span></div>
+        <p class="ctext">Scans the threads where the team already talks about billing, keyed on invoice and project codes rather than who was mentioned.</p>
+        <div class="pills"><span class="pill"><span class="ic">&#8635;</span>Official communications channel</span></div>
+        <div class="callout"><b>Soft dependency:</b> this step only finds a stage change if a person actually typed one. No post looks identical to no progress &mdash; the run can narrow that gap, but can't close it alone.</div>
+      </div>
+    </div>
+
+    <div class="step auto">
+      <div class="rail"><div class="marker">5</div></div>
+      <div class="card">
+        <div class="chead"><span class="ctitle">Cross-references and scores</span><span class="tag auto">Automatic</span></div>
+        <p class="ctext">Joins the two sources on a shared key, assigns each item its current stage, and flags anything past the agreed target as a day count, not a guess. Pure logic &mdash; nothing external to reach for here.</p>
+      </div>
+    </div>
+
+    <div class="step manual">
+      <div class="rail"><div class="marker">6</div></div>
+      <div class="card">
+        <div class="chead"><span class="ctitle">People write their own notes</span><span class="tag manual">Manual &middot; ongoing</span></div>
+        <p class="ctext">Anyone on the team can type a short note straight onto an item on the live page at any time &mdash; a chase sent, a reason something's stuck. The run never writes these; it only has to avoid erasing them when it rebuilds the page.</p>
+        <div class="pills"><span class="pill"><span class="ic">&#8635;</span>Published dashboard</span></div>
+      </div>
+    </div>
+
+    <div class="step auto">
+      <div class="rail"><div class="marker">7</div></div>
+      <div class="card">
+        <div class="chead"><span class="ctitle">Rebuilds and republishes</span><span class="tag auto">Automatic</span></div>
+        <p class="ctext">Rewrites the report in place at the same link, then opens its own output and checks that the filters and the notes still work before calling the run finished.</p>
+        <div class="pills"><span class="pill"><span class="ic">&#8635;</span>Published dashboard</span></div>
+      </div>
+    </div>
+
+    <div class="step manual">
+      <div class="rail"><div class="marker">8</div></div>
+      <div class="card">
+        <div class="chead"><span class="ctitle">Someone decides what to send</span><span class="tag manual">Manual &middot; hard stop</span></div>
+        <p class="ctext">Drafts the short summary and every nudge it recommends, addressed and ready to go &mdash; but stops there. It never sends a message on its own; a person reads the draft and chooses whether, and how, to send it.</p>
+        <div class="pills"><span class="pill"><span class="ic">&#8635;</span>Official communications channel</span></div>
+      </div>
+    </div>
+
+    <div class="step manual">
+      <div class="rail"><div class="marker">9</div></div>
+      <div class="card">
+        <div class="chead"><span class="ctitle">Root causes need an admin</span><span class="tag manual">Manual &middot; out of reach</span></div>
+        <p class="ctext">When the problem is the data itself &mdash; a field that never gets written back, a filter that silently drops real records &mdash; the run can only name the gap and route around it. Fixing it means someone with admin access to the system of record changes it there.</p>
+        <div class="pills"><span class="pill"><span class="ic">&#8635;</span>CRM</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>Three outside systems in total: the CRM (source of order/invoice records), the official communications channel (source of human-reported status), and the published dashboard itself (read back in as memory, written back out as the report, and the one place people leave notes by hand).</p>
+  </footer>
+
+</div>
+
+</div>
+
+<script>
+  (function () {
+    var tabs = [
+      { btn: document.getElementById('tab-radar'), panel: document.getElementById('panel-radar') },
+      { btn: document.getElementById('tab-map'), panel: document.getElementById('panel-map') }
+    ];
+    tabs.forEach(function (t) {
+      t.btn.addEventListener('click', function () {
+        tabs.forEach(function (o) {
+          var active = o === t;
+          o.btn.setAttribute('aria-selected', String(active));
+          o.panel.hidden = !active;
+        });
+      });
+    });
+  })();
+</script>
+
+</body></html>
